@@ -1,0 +1,11 @@
+self.addEventListener('install', (e) => {
+  e.waitUntil(self.skipWaiting());
+});
+
+self.addEventListener('activate', (e) => {
+  e.waitUntil(self.clients.claim());
+});
+
+self.addEventListener('fetch', (e) => {
+  // A minimal fetch handler is required for PWA installability
+});

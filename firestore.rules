@@ -1,0 +1,95 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: products
+    // Document ID: auto-generated
+    // Fields:
+    //   - name: string (required, max 100 chars)
+    //   - imageUrl: string (required, max 1000 chars)
+    //   - variations: list of objects (required, max 50 items)
+    //   - ownerId: string (required, immutable)
+    //   - createdAt: timestamp (required, immutable)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.ownerId;
+    }
+
+    function uidUnchanged() {
+      return !('ownerId' in request.resource.data) || request.resource.data.ownerId == request.auth.uid;
+    }
+
+    function uidNotModified() {
+      return !('ownerId' in request.resource.data) || request.resource.data.ownerId == resource.data.ownerId;
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function validStringLength(field, minLen, maxLen) {
+      return request.resource.data[field] is string &&
+        request.resource.data[field].size() >= minLen &&
+        request.resource.data[field].size() <= maxLen;
+    }
+
+    function areValidVariations(variations) {
+      return variations is list && variations.size() <= 50;
+    }
+
+    function isValidUserProfile() {
+      return hasOnlyAllowedFields(['uid', 'displayName', 'photoUrl', 'updatedAt']) &&
+             validStringLength('displayName', 1, 100) &&
+             validStringLength('photoUrl', 0, 1000000) &&
+             request.resource.data.uid is string &&
+             request.resource.data.updatedAt is timestamp;
+    }
+
+    function isValidProduct() {
+      return hasOnlyAllowedFields(['name', 'imageUrl', 'variations', 'ownerId', 'createdAt']) &&
+             validStringLength('name', 1, 100) &&
+             validStringLength('imageUrl', 0, 1000000) && // Allow large base64 images
+             areValidVariations(request.resource.data.variations) &&
+             request.resource.data.ownerId is string &&
+             request.resource.data.createdAt is timestamp;
+    }
+
+    match /products/{productId} {
+      allow read: if isAuthenticated();
+      allow delete: if isDocOwner();
+      allow create: if isAuthenticated() && 
+                       isValidProduct() && 
+                       uidUnchanged() && 
+                       request.resource.data.ownerId == request.auth.uid;
+      allow update: if isDocOwner() && 
+                       isValidProduct() && 
+                       uidNotModified() && 
+                       request.resource.data.createdAt == resource.data.createdAt;
+    }
+
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && 
+                       request.auth.uid == userId && 
+                       isValidUserProfile() && 
+                       request.resource.data.uid == request.auth.uid;
+      allow update: if isAuthenticated() && 
+                       request.auth.uid == userId && 
+                       isValidUserProfile() && 
+                       request.resource.data.uid == resource.data.uid;
+    }
+  }
+}

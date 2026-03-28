@@ -1,0 +1,54 @@
+{
+  "entities": {
+    "Variation": {
+      "title": "Variation",
+      "description": "A product variation.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "isOutOfStock": { "type": "boolean" },
+        "group": { "type": "string", "enum": ["5", "10", "other"] }
+      },
+      "required": ["id", "name", "isOutOfStock"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "A supermarket product.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "variations": {
+          "type": "array",
+          "items": { "$ref": "#/entities/Variation" }
+        },
+        "ownerId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "imageUrl", "variations", "ownerId", "createdAt"]
+    },
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Public profile for a user.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "displayName": { "type": "string" },
+        "photoUrl": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "displayName", "photoUrl", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "products/{productId}": {
+      "schema": { "$ref": "#/entities/Product" },
+      "description": "Products owned by users."
+    },
+    "users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "User profiles."
+    }
+  }
+}
