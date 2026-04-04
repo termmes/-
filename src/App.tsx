@@ -462,16 +462,21 @@ export default function App() {
                           onChange={(e) => setNewProductImage(e.target.value)}
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all pr-12 min-w-0"
                         />
-                        <label className="absolute right-2 p-1.5 text-gray-400 hover:text-gray-600 cursor-pointer bg-white rounded-md transition-colors shrink-0" title="Upload Image">
+                        <button 
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="absolute right-2 p-1.5 text-gray-400 hover:text-gray-600 cursor-pointer bg-white rounded-md transition-colors shrink-0" 
+                          title="Upload Image"
+                        >
                           <ImagePlus className="w-5 h-5" />
-                          <input 
-                            type="file" 
-                            accept="image/*" 
-                            className="hidden" 
-                            ref={fileInputRef}
-                            onChange={handleImageUpload} 
-                          />
-                        </label>
+                        </button>
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          className="hidden" 
+                          ref={fileInputRef}
+                          onChange={handleImageUpload} 
+                        />
                       </>
                     )}
                   </div>
@@ -674,10 +679,14 @@ function ProfileView({ user, profile, onInstallClick, canInstall }: { user: User
             className="w-32 h-32 rounded-full object-cover border-4 border-gray-50 shadow-sm" 
             onError={(e) => { (e.target as HTMLImageElement).src = 'https://www.gravatar.com/avatar/?d=mp'; }}
           />
-          <label className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
+          <button 
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+          >
             <ImagePlus className="w-4 h-4" /> Change Picture
-            <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleImageUpload} />
-          </label>
+          </button>
+          <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleImageUpload} />
         </div>
         
         <div>
@@ -722,6 +731,7 @@ function ProductCard({
   onUpdateImage: (productId: string, newImageUrl: string) => void;
   isOwner: boolean;
 }) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [newVarNames, setNewVarNames] = useState<{ '5': string, '10': string, 'other': string }>({ '5': '', '10': '', 'other': '' });
   const [expandedGroups, setExpandedGroups] = useState<{ '5': boolean, '10': boolean, 'other': boolean }>({ '5': false, '10': false, 'other': false });
   const [isUpdatingImage, setIsUpdatingImage] = useState(false);
@@ -851,10 +861,16 @@ function ProductCard({
         )}
         {isOwner && (
           <div className="absolute top-2 right-2 flex gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all">
-            <label className="p-2 sm:p-1.5 bg-white/90 hover:bg-blue-100 text-gray-600 hover:text-blue-600 rounded-md cursor-pointer shadow-sm" title="Change Image">
+            <button 
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="p-2 sm:p-1.5 bg-white/90 hover:bg-blue-100 text-gray-600 hover:text-blue-600 rounded-md cursor-pointer shadow-sm" 
+              title="Change Image"
+              disabled={isUpdatingImage}
+            >
               <ImagePlus className="w-5 h-5 sm:w-4 sm:h-4" />
-              <input type="file" accept="image/*" className="hidden" onChange={handleImageEdit} disabled={isUpdatingImage} />
-            </label>
+            </button>
+            <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleImageEdit} disabled={isUpdatingImage} />
             <button 
               onClick={() => onDeleteProduct(product.id)}
               className="p-2 sm:p-1.5 bg-white/90 hover:bg-red-100 text-gray-600 hover:text-red-600 rounded-md shadow-sm"
