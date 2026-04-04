@@ -345,9 +345,9 @@ export default function App() {
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2">
-              <Library className="w-6 h-6 text-blue-600" />
-              <h1 className="text-xl font-bold text-gray-900">مكتبه الهدى</h1>
+            <div className="flex items-center gap-2 shrink-0">
+              <Library className="w-6 h-6 text-blue-600 shrink-0" />
+              <h1 className="text-lg sm:text-xl font-bold text-gray-900 truncate max-w-[120px] sm:max-w-none">مكتبه الهدى</h1>
             </div>
             <nav className="hidden md:flex items-center gap-1 bg-gray-100 p-1 rounded-lg">
               <button 
@@ -368,7 +368,7 @@ export default function App() {
             {deferredPrompt && (
               <button
                 onClick={handleInstallClick}
-                className="flex items-center gap-1 sm:gap-2 bg-blue-50 hover:bg-blue-100 text-blue-700 px-2 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-colors border border-blue-200"
+                className="flex items-center gap-1 sm:gap-2 bg-blue-50 hover:bg-blue-100 text-blue-700 px-2 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-colors border border-blue-200 shrink-0"
               >
                 <Download className="w-4 h-4" />
                 <span className="hidden sm:inline">Install App</span>
@@ -392,7 +392,7 @@ export default function App() {
       </header>
 
       {/* Mobile Bottom Nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex items-center justify-around pb-safe z-50">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex items-center justify-around pb-[env(safe-area-inset-bottom,0.5rem)] z-50">
         <button onClick={() => setActiveTab('catalog')} className={`flex flex-col items-center p-3 ${activeTab === 'catalog' ? 'text-blue-600' : 'text-gray-500'}`}>
           <Library className="w-6 h-6" />
           <span className="text-[10px] font-medium mt-1">Catalog</span>
@@ -435,12 +435,12 @@ export default function App() {
                     placeholder="Product Name (e.g., Coca Cola)"
                     value={newProductName}
                     onChange={(e) => setNewProductName(e.target.value)}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all min-w-0"
                     required
                   />
-                  <div className="flex-1 relative flex items-center">
+                  <div className="flex-1 relative flex items-center min-w-0">
                     {newProductImage.startsWith('data:') ? (
-                      <div className="flex-1 flex items-center justify-between px-4 py-2 border border-blue-300 bg-blue-50 rounded-lg">
+                      <div className="flex-1 flex items-center justify-between px-4 py-2 border border-blue-300 bg-blue-50 rounded-lg min-w-0">
                         <span className="text-sm text-blue-700 font-medium truncate">Image uploaded</span>
                         <button 
                           type="button" 
@@ -448,7 +448,7 @@ export default function App() {
                             setNewProductImage('');
                             if (fileInputRef.current) fileInputRef.current.value = '';
                           }} 
-                          className="text-blue-500 hover:text-blue-700 p-1"
+                          className="text-blue-500 hover:text-blue-700 p-1 shrink-0"
                         >
                           <X className="w-4 h-4" />
                         </button>
@@ -460,9 +460,9 @@ export default function App() {
                           placeholder="Image URL (optional)"
                           value={newProductImage}
                           onChange={(e) => setNewProductImage(e.target.value)}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all pr-12"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all pr-12 min-w-0"
                         />
-                        <label className="absolute right-2 p-1.5 text-gray-400 hover:text-gray-600 cursor-pointer bg-white rounded-md transition-colors" title="Upload Image">
+                        <label className="absolute right-2 p-1.5 text-gray-400 hover:text-gray-600 cursor-pointer bg-white rounded-md transition-colors shrink-0" title="Upload Image">
                           <ImagePlus className="w-5 h-5" />
                           <input 
                             type="file" 
@@ -477,7 +477,7 @@ export default function App() {
                   </div>
                   <button
                     type="submit"
-                    className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors whitespace-nowrap"
+                    className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors whitespace-nowrap shrink-0"
                   >
                     Add Product
                   </button>
@@ -526,7 +526,7 @@ export default function App() {
                         value={outOfStockItems.join('\n')}
                         className="w-full h-64 p-3 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700 font-mono resize-none focus:outline-none mb-4"
                       />
-                      <div className="flex gap-2">
+                      <div className="flex flex-col sm:flex-row gap-2">
                         <button
                           onClick={handleCopy}
                           className="flex-1 flex items-center justify-center gap-2 bg-gray-900 hover:bg-gray-800 text-white px-4 py-2.5 rounded-lg font-medium transition-colors"
@@ -782,7 +782,7 @@ function ProductCard({
                     variation.isOutOfStock ? 'bg-red-50 border-red-200' : 'bg-white border-gray-200 shadow-sm'
                   }`}
                 >
-                  <span className={`text-sm leading-relaxed ${variation.isOutOfStock ? 'text-red-700 font-medium' : 'text-gray-700'}`}>
+                  <span className={`text-sm leading-relaxed break-words min-w-0 ${variation.isOutOfStock ? 'text-red-700 font-medium' : 'text-gray-700'}`}>
                     {variation.name}
                   </span>
                   <div className="flex items-center justify-end gap-2 shrink-0">
@@ -817,12 +817,12 @@ function ProductCard({
                 placeholder={`Add to ${title}...`}
                 value={newVarNames[groupId]}
                 onChange={(e) => setNewVarNames(prev => ({ ...prev, [groupId]: e.target.value }))}
-                className="flex-1 px-3 py-2 sm:py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
+                className="flex-1 px-3 py-2 sm:py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white min-w-0"
               />
               <button
                 type="submit"
                 disabled={!newVarNames[groupId].trim()}
-                className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white px-4 sm:px-3 py-2 sm:py-1.5 rounded-md text-sm font-medium transition-colors shadow-sm"
+                className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white px-4 sm:px-3 py-2 sm:py-1.5 rounded-md text-sm font-medium transition-colors shadow-sm shrink-0"
               >
                 Add
               </button>
