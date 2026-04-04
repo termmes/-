@@ -19,7 +19,7 @@ export default defineConfig(({mode}) => {
           theme_color: '#ffffff',
           icons: [
             {
-              src: 'https://cdn-icons-png.flaticon.com/512/3081/3081840.png',
+              src: '/favicon.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'any maskable'
