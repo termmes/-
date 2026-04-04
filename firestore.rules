@@ -3,25 +3,29 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     // ===============================================================
-    // Assumed Data Model
-    // ===============================================================
-    //
-    // Collection: products
-    // Document ID: auto-generated
-    // Fields:
-    //   - name: string (required, max 100 chars)
-    //   - imageUrl: string (required, max 1000 chars)
-    //   - variations: list of objects (required, max 50 items)
-    //   - ownerId: string (required, immutable)
-    //   - createdAt: timestamp (required, immutable)
-    //
-    // ===============================================================
-
-    // ===============================================================
     // Helper Functions
     // ===============================================================
     function isAuthenticated() {
       return request.auth != null;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserData().role == 'admin') ||
+        (request.auth.token.email == "kblox05@gmail.com" && request.auth.token.email_verified == true)
+      );
+    }
+
+    function isMember() {
+      return isAuthenticated() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserData().role == 'member';
+    }
+
+    function canEditCatalog() {
+      return isAdmin() || isMember();
     }
 
     function isDocOwner() {
@@ -51,11 +55,12 @@ service cloud.firestore {
     }
 
     function isValidUserProfile() {
-      return hasOnlyAllowedFields(['uid', 'displayName', 'photoUrl', 'updatedAt']) &&
+      return hasOnlyAllowedFields(['uid', 'displayName', 'photoUrl', 'updatedAt', 'role']) &&
              validStringLength('displayName', 1, 100) &&
              validStringLength('photoUrl', 0, 1000000) &&
              request.resource.data.uid is string &&
-             request.resource.data.updatedAt is timestamp;
+             request.resource.data.updatedAt is timestamp &&
+             (!('role' in request.resource.data) || request.resource.data.role in ['admin', 'member', 'user']);
     }
 
     function isValidProduct() {
@@ -69,12 +74,12 @@ service cloud.firestore {
 
     match /products/{productId} {
       allow read: if isAuthenticated();
-      allow delete: if isDocOwner();
-      allow create: if isAuthenticated() && 
+      allow delete: if canEditCatalog();
+      allow create: if canEditCatalog() && 
                        isValidProduct() && 
                        uidUnchanged() && 
                        request.resource.data.ownerId == request.auth.uid;
-      allow update: if isDocOwner() && 
+      allow update: if canEditCatalog() && 
                        isValidProduct() && 
                        uidNotModified() && 
                        request.resource.data.createdAt == resource.data.createdAt;
@@ -85,11 +90,19 @@ service cloud.firestore {
       allow create: if isAuthenticated() && 
                        request.auth.uid == userId && 
                        isValidUserProfile() && 
-                       request.resource.data.uid == request.auth.uid;
+                       request.resource.data.uid == request.auth.uid &&
+                       (
+                         !('role' in request.resource.data) || 
+                         request.resource.data.role == 'user' || 
+                         isAdmin()
+                       );
       allow update: if isAuthenticated() && 
-                       request.auth.uid == userId && 
                        isValidUserProfile() && 
-                       request.resource.data.uid == resource.data.uid;
+                       request.resource.data.uid == resource.data.uid &&
+                       (
+                         (request.auth.uid == userId && (!('role' in request.resource.data) || request.resource.data.role == resource.data.role)) ||
+                         isAdmin()
+                       );
     }
   }
 }

@@ -137,6 +137,7 @@ export default function App() {
             uid: user.uid,
             displayName: user.displayName || 'Anonymous User',
             photoUrl: user.photoURL || 'https://www.gravatar.com/avatar/?d=mp',
+            role: user.email === 'kblox05@gmail.com' ? 'admin' : 'user',
             updatedAt: serverTimestamp()
           };
           await setDoc(userRef, newProfile);
@@ -317,6 +318,9 @@ export default function App() {
     }
   };
 
+  const canEdit = profile?.role === 'admin' || profile?.role === 'member';
+  const isAdmin = profile?.role === 'admin';
+
   if (!isAuthReady) {
     return <div className="min-h-screen flex items-center justify-center bg-gray-50 text-gray-500">Loading...</div>;
   }
@@ -425,64 +429,66 @@ export default function App() {
             {/* Left Column: Products */}
             <div className={`flex-1 space-y-8 ${activeTab === 'catalog' ? 'block' : 'hidden lg:block'}`}>
               {/* Add Product Form */}
-              <section className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <Plus className="w-5 h-5" /> Add New Product
-                </h2>
-                <form onSubmit={handleAddProduct} className="flex flex-col sm:flex-row gap-4">
-                  <input
-                    type="text"
-                    placeholder="Product Name (e.g., Coca Cola)"
-                    value={newProductName}
-                    onChange={(e) => setNewProductName(e.target.value)}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                    required
-                  />
-                  <div className="flex-1 relative flex items-center">
-                    {newProductImage.startsWith('data:') ? (
-                      <div className="flex-1 flex items-center justify-between px-4 py-2 border border-blue-300 bg-blue-50 rounded-lg">
-                        <span className="text-sm text-blue-700 font-medium truncate">Image uploaded</span>
-                        <button 
-                          type="button" 
-                          onClick={() => {
-                            setNewProductImage('');
-                            if (fileInputRef.current) fileInputRef.current.value = '';
-                          }} 
-                          className="text-blue-500 hover:text-blue-700 p-1"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ) : (
-                      <>
-                        <input
-                          type="url"
-                          placeholder="Image URL (optional)"
-                          value={newProductImage}
-                          onChange={(e) => setNewProductImage(e.target.value)}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all pr-12"
-                        />
-                        <label className="absolute right-2 p-1.5 text-gray-400 hover:text-gray-600 cursor-pointer bg-white rounded-md transition-colors" title="Upload Image">
-                          <ImagePlus className="w-5 h-5" />
-                          <input 
-                            type="file" 
-                            accept="image/*" 
-                            className="hidden" 
-                            ref={fileInputRef}
-                            onChange={handleImageUpload} 
+              {canEdit && (
+                <section className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                  <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <Plus className="w-5 h-5" /> Add New Product
+                  </h2>
+                  <form onSubmit={handleAddProduct} className="flex flex-col sm:flex-row gap-4">
+                    <input
+                      type="text"
+                      placeholder="Product Name (e.g., Coca Cola)"
+                      value={newProductName}
+                      onChange={(e) => setNewProductName(e.target.value)}
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                      required
+                    />
+                    <div className="flex-1 relative flex items-center">
+                      {newProductImage.startsWith('data:') ? (
+                        <div className="flex-1 flex items-center justify-between px-4 py-2 border border-blue-300 bg-blue-50 rounded-lg">
+                          <span className="text-sm text-blue-700 font-medium truncate">Image uploaded</span>
+                          <button 
+                            type="button" 
+                            onClick={() => {
+                              setNewProductImage('');
+                              if (fileInputRef.current) fileInputRef.current.value = '';
+                            }} 
+                            className="text-blue-500 hover:text-blue-700 p-1"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <input
+                            type="url"
+                            placeholder="Image URL (optional)"
+                            value={newProductImage}
+                            onChange={(e) => setNewProductImage(e.target.value)}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all pr-12"
                           />
-                        </label>
-                      </>
-                    )}
-                  </div>
-                  <button
-                    type="submit"
-                    className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors whitespace-nowrap"
-                  >
-                    Add Product
-                  </button>
-                </form>
-              </section>
+                          <label className="absolute right-2 p-1.5 text-gray-400 hover:text-gray-600 cursor-pointer bg-white rounded-md transition-colors" title="Upload Image">
+                            <ImagePlus className="w-5 h-5" />
+                            <input 
+                              type="file" 
+                              accept="image/*" 
+                              className="hidden" 
+                              ref={fileInputRef}
+                              onChange={handleImageUpload} 
+                            />
+                          </label>
+                        </>
+                      )}
+                    </div>
+                    <button
+                      type="submit"
+                      className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors whitespace-nowrap"
+                    >
+                      Add Product
+                    </button>
+                  </form>
+                </section>
+              )}
 
               {/* Product Grid */}
               <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -490,7 +496,7 @@ export default function App() {
                   <ProductCard 
                     key={product.id} 
                     product={product} 
-                    isOwner={product.ownerId === user.uid}
+                    isOwner={canEdit}
                     onAddVariation={handleAddVariation}
                     onToggleStock={toggleOutOfStock}
                     onDeleteProduct={handleDeleteProduct}
@@ -555,7 +561,7 @@ export default function App() {
           </div>
         )}
 
-        {activeTab === 'community' && <CommunityView />}
+        {activeTab === 'community' && <CommunityView isAdmin={isAdmin} />}
         
         {activeTab === 'profile' && <ProfileView user={user} profile={profile} onInstallClick={handleInstallClick} canInstall={!!deferredPrompt} />}
 
@@ -564,7 +570,7 @@ export default function App() {
   );
 }
 
-function CommunityView() {
+function CommunityView({ isAdmin }: { isAdmin: boolean }) {
   const [users, setUsers] = useState<UserProfile[]>([]);
   
   useEffect(() => {
@@ -576,20 +582,43 @@ function CommunityView() {
     return () => unsubscribe();
   }, []);
 
+  const handleRoleChange = async (uid: string, newRole: string) => {
+    try {
+      await updateDoc(doc(db, 'users', uid), { role: newRole });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `users/${uid}`);
+    }
+  };
+
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       <h2 className="text-2xl font-bold flex items-center gap-2 text-gray-900"><Users className="w-6 h-6 text-blue-600" /> Community Members</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {users.map(u => (
-          <div key={u.uid} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center text-center gap-4 hover:shadow-md transition-shadow">
+          <div key={u.uid} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center text-center gap-4 hover:shadow-md transition-shadow relative">
             <img 
               src={u.photoUrl || 'https://www.gravatar.com/avatar/?d=mp'} 
               alt={u.displayName} 
               className="w-24 h-24 rounded-full object-cover border-4 border-gray-50 shadow-sm" 
               onError={(e) => { (e.target as HTMLImageElement).src = 'https://www.gravatar.com/avatar/?d=mp'; }} 
             />
-            <div>
-              <h3 className="font-bold text-lg text-gray-900">{u.displayName}</h3>
+            <div className="w-full">
+              <h3 className="font-bold text-lg text-gray-900 truncate">{u.displayName}</h3>
+              {isAdmin ? (
+                <select 
+                  value={u.role || 'user'} 
+                  onChange={(e) => handleRoleChange(u.uid, e.target.value)}
+                  className="mt-2 w-full text-sm border border-gray-300 rounded-md px-2 py-1 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="user">User</option>
+                  <option value="member">Member</option>
+                  <option value="admin">Admin</option>
+                </select>
+              ) : (
+                <span className="inline-block mt-2 text-xs font-medium bg-gray-100 text-gray-600 px-2 py-1 rounded-full uppercase">
+                  {u.role || 'user'}
+                </span>
+              )}
             </div>
           </div>
         ))}
@@ -705,15 +734,7 @@ function ProfileView({ user, profile, onInstallClick, canInstall }: { user: User
   );
 }
 
-function ProductCard({ 
-  product, 
-  onAddVariation, 
-  onToggleStock,
-  onDeleteProduct,
-  onDeleteVariation,
-  onUpdateImage,
-  isOwner
-}: { 
+const ProductCard: React.FC<{ 
   product: Product; 
   onAddVariation: (productId: string, name: string, group: '5' | '10' | 'other') => void;
   onToggleStock: (productId: string, variationId: string) => void;
@@ -721,7 +742,15 @@ function ProductCard({
   onDeleteVariation: (productId: string, variationId: string) => void;
   onUpdateImage: (productId: string, newImageUrl: string) => void;
   isOwner: boolean;
-}) {
+}> = ({ 
+  product, 
+  onAddVariation, 
+  onToggleStock,
+  onDeleteProduct,
+  onDeleteVariation,
+  onUpdateImage,
+  isOwner
+}) => {
   const [newVarNames, setNewVarNames] = useState<{ '5': string, '10': string, 'other': string }>({ '5': '', '10': '', 'other': '' });
   const [expandedGroups, setExpandedGroups] = useState<{ '5': boolean, '10': boolean, 'other': boolean }>({ '5': false, '10': false, 'other': false });
   const [isUpdatingImage, setIsUpdatingImage] = useState(false);
