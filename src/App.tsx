@@ -94,7 +94,7 @@ export default function App() {
   const [isClearing, setIsClearing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [activeTab, setActiveTab] = useState<'catalog' | 'community' | 'profile'>('catalog');
+  const [activeTab, setActiveTab] = useState<'catalog' | 'community' | 'profile' | 'outOfStock'>('catalog');
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
@@ -347,7 +347,7 @@ export default function App() {
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">
               <Library className="w-6 h-6 text-blue-600" />
-              <h1 className="text-xl font-bold text-gray-900 hidden sm:block">مكتبه الهدى</h1>
+              <h1 className="text-xl font-bold text-gray-900">مكتبه الهدى</h1>
             </div>
             <nav className="hidden md:flex items-center gap-1 bg-gray-100 p-1 rounded-lg">
               <button 
@@ -364,53 +364,66 @@ export default function App() {
               </button>
             </nav>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             {deferredPrompt && (
               <button
                 onClick={handleInstallClick}
-                className="flex items-center gap-2 bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border border-blue-200"
+                className="flex items-center gap-1 sm:gap-2 bg-blue-50 hover:bg-blue-100 text-blue-700 px-2 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-colors border border-blue-200"
               >
                 <Download className="w-4 h-4" />
-                Install App
+                <span className="hidden sm:inline">Install App</span>
+                <span className="sm:hidden">Install</span>
               </button>
             )}
-            <button onClick={() => setActiveTab('profile')} className="flex items-center gap-2 hover:bg-gray-50 p-1.5 rounded-lg transition-colors">
+            <button onClick={() => setActiveTab('profile')} className="hidden md:flex items-center gap-2 hover:bg-gray-50 p-1.5 rounded-lg transition-colors">
               <img src={profile?.photoUrl || user.photoURL || 'https://www.gravatar.com/avatar/?d=mp'} alt="Profile" className="w-8 h-8 rounded-full object-cover border border-gray-200" />
               <span className="text-sm font-medium text-gray-700 hidden sm:block">{profile?.displayName || user.displayName}</span>
             </button>
-            <div className="w-px h-6 bg-gray-200"></div>
+            <div className="hidden md:block w-px h-6 bg-gray-200"></div>
             <button
               onClick={logOut}
-              className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-red-600 transition-colors"
+              className="hidden md:flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-red-600 transition-colors"
             >
               <LogOut className="w-4 h-4" />
               <span className="hidden sm:inline">Sign Out</span>
             </button>
           </div>
         </div>
-        {/* Mobile nav */}
-        <div className="md:hidden border-t border-gray-100 px-4 py-2 flex gap-2 overflow-x-auto">
-          <button 
-            onClick={() => setActiveTab('catalog')} 
-            className={`px-4 py-1.5 rounded-md text-sm font-medium whitespace-nowrap ${activeTab === 'catalog' ? 'bg-gray-100 text-gray-900' : 'text-gray-600'}`}
-          >
-            Catalog
-          </button>
-          <button 
-            onClick={() => setActiveTab('community')} 
-            className={`px-4 py-1.5 rounded-md text-sm font-medium whitespace-nowrap ${activeTab === 'community' ? 'bg-gray-100 text-gray-900' : 'text-gray-600'}`}
-          >
-            Community
-          </button>
-        </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Mobile Bottom Nav */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex items-center justify-around pb-safe z-50">
+        <button onClick={() => setActiveTab('catalog')} className={`flex flex-col items-center p-3 ${activeTab === 'catalog' ? 'text-blue-600' : 'text-gray-500'}`}>
+          <Library className="w-6 h-6" />
+          <span className="text-[10px] font-medium mt-1">Catalog</span>
+        </button>
+        <button onClick={() => setActiveTab('outOfStock')} className={`flex flex-col items-center p-3 ${activeTab === 'outOfStock' ? 'text-blue-600' : 'text-gray-500'} relative`}>
+          <div className="relative">
+            <AlertCircle className="w-6 h-6" />
+            {outOfStockItems.length > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                {outOfStockItems.length}
+              </span>
+            )}
+          </div>
+          <span className="text-[10px] font-medium mt-1">Shortages</span>
+        </button>
+        <button onClick={() => setActiveTab('community')} className={`flex flex-col items-center p-3 ${activeTab === 'community' ? 'text-blue-600' : 'text-gray-500'}`}>
+          <Users className="w-6 h-6" />
+          <span className="text-[10px] font-medium mt-1">Community</span>
+        </button>
+        <button onClick={() => setActiveTab('profile')} className={`flex flex-col items-center p-3 ${activeTab === 'profile' ? 'text-blue-600' : 'text-gray-500'}`}>
+          <Settings className="w-6 h-6" />
+          <span className="text-[10px] font-medium mt-1">Profile</span>
+        </button>
+      </nav>
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24 md:pb-8">
         
-        {activeTab === 'catalog' && (
+        {(activeTab === 'catalog' || activeTab === 'outOfStock') && (
           <div className="flex flex-col lg:flex-row gap-8">
             {/* Left Column: Products */}
-            <div className="flex-1 space-y-8">
+            <div className={`flex-1 space-y-8 ${activeTab === 'catalog' ? 'block' : 'hidden lg:block'}`}>
               {/* Add Product Form */}
               <section className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                 <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
@@ -464,7 +477,7 @@ export default function App() {
                   </div>
                   <button
                     type="submit"
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors whitespace-nowrap"
+                    className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors whitespace-nowrap"
                   >
                     Add Product
                   </button>
@@ -494,7 +507,7 @@ export default function App() {
             </div>
 
             {/* Right Column: Out of Stock List */}
-            <div className="w-full lg:w-96 shrink-0">
+            <div className={`w-full lg:w-96 shrink-0 ${activeTab === 'outOfStock' ? 'block' : 'hidden lg:block'}`}>
               <div className="bg-white rounded-xl shadow-sm border border-red-100 overflow-hidden sticky top-24">
                 <div className="bg-red-50 p-4 border-b border-red-100 flex items-center justify-between">
                   <h2 className="text-lg font-semibold text-red-800 flex items-center gap-2">
@@ -777,7 +790,7 @@ function ProductCard({
                       <>
                         <button
                           onClick={() => onToggleStock(product.id, variation.id)}
-                          className={`text-xs px-2 py-1 rounded font-medium transition-colors ${
+                          className={`text-xs px-3 py-2 sm:px-2 sm:py-1 rounded font-medium transition-colors ${
                             variation.isOutOfStock 
                               ? 'bg-red-100 text-red-700 hover:bg-red-200' 
                               : 'bg-gray-100 border border-gray-200 text-gray-600 hover:bg-gray-200'
@@ -787,14 +800,14 @@ function ProductCard({
                         </button>
                         <button
                           onClick={() => onDeleteVariation(product.id, variation.id)}
-                          className="text-gray-400 hover:text-red-500 transition-colors p-1"
+                          className="text-gray-400 hover:text-red-500 transition-colors p-2 sm:p-1"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash2 className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
                         </button>
                       </>
                     )}
                     {!isOwner && variation.isOutOfStock && (
-                      <span className="text-xs px-2 py-1 rounded font-medium bg-red-100 text-red-700">
+                      <span className="text-xs px-3 py-2 sm:px-2 sm:py-1 rounded font-medium bg-red-100 text-red-700">
                         Out of Stock
                       </span>
                     )}
@@ -812,12 +825,12 @@ function ProductCard({
                   placeholder={`Add to ${title}...`}
                   value={newVarNames[groupId]}
                   onChange={(e) => setNewVarNames(prev => ({ ...prev, [groupId]: e.target.value }))}
-                  className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
+                  className="flex-1 px-3 py-2 sm:py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
                 />
                 <button
                   type="submit"
                   disabled={!newVarNames[groupId].trim()}
-                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white px-3 py-1.5 rounded-md text-sm font-medium transition-colors shadow-sm"
+                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white px-4 sm:px-3 py-2 sm:py-1.5 rounded-md text-sm font-medium transition-colors shadow-sm"
                 >
                   Add
                 </button>
@@ -846,18 +859,18 @@ function ProductCard({
           </div>
         )}
         {isOwner && (
-          <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-all">
-            <label className="p-1.5 bg-white/90 hover:bg-blue-100 text-gray-600 hover:text-blue-600 rounded-md cursor-pointer shadow-sm" title="Change Image">
-              <ImagePlus className="w-4 h-4" />
+          <div className="absolute top-2 right-2 flex gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all">
+            <label className="p-2 sm:p-1.5 bg-white/90 hover:bg-blue-100 text-gray-600 hover:text-blue-600 rounded-md cursor-pointer shadow-sm" title="Change Image">
+              <ImagePlus className="w-5 h-5 sm:w-4 sm:h-4" />
               <input type="file" accept="image/*" className="hidden" onChange={handleImageEdit} disabled={isUpdatingImage} />
             </label>
             <button 
               onClick={() => onDeleteProduct(product.id)}
-              className="p-1.5 bg-white/90 hover:bg-red-100 text-gray-600 hover:text-red-600 rounded-md shadow-sm"
+              className="p-2 sm:p-1.5 bg-white/90 hover:bg-red-100 text-gray-600 hover:text-red-600 rounded-md shadow-sm"
               title="Delete Product"
               disabled={isUpdatingImage}
             >
-              <Trash2 className="w-4 h-4" />
+              <Trash2 className="w-5 h-5 sm:w-4 sm:h-4" />
             </button>
           </div>
         )}
