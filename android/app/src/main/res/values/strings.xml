@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">مكتبه الهدى</string>
+    <string name="title_activity_main">مكتبه الهدى</string>
+    <string name="package_name">com.maktabatalhuda.app</string>
+    <string name="custom_url_scheme">com.maktabatalhuda.app</string>
+</resources>
