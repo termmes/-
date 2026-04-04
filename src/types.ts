@@ -18,5 +18,6 @@ export interface UserProfile {
   uid: string;
   displayName: string;
   photoUrl: string;
+  role?: 'admin' | 'member' | 'user';
   updatedAt: any;
 }

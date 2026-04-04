@@ -778,38 +778,31 @@ function ProductCard({
               {groupVars.map(variation => (
                 <div 
                   key={variation.id} 
-                  className={`flex items-center justify-between p-2 rounded-md border ${
+                  className={`flex flex-col sm:flex-row sm:items-center justify-between p-2 gap-2 rounded-md border ${
                     variation.isOutOfStock ? 'bg-red-50 border-red-200' : 'bg-white border-gray-200 shadow-sm'
                   }`}
                 >
-                  <span className={`text-sm ${variation.isOutOfStock ? 'text-red-700 font-medium' : 'text-gray-700'}`}>
+                  <span className={`text-sm leading-relaxed ${variation.isOutOfStock ? 'text-red-700 font-medium' : 'text-gray-700'}`}>
                     {variation.name}
                   </span>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-end gap-2 shrink-0">
+                    <button
+                      onClick={() => onToggleStock(product.id, variation.id)}
+                      className={`text-xs px-3 py-2 sm:px-2 sm:py-1 rounded font-medium transition-colors ${
+                        variation.isOutOfStock 
+                          ? 'bg-red-100 text-red-700 hover:bg-red-200' 
+                          : 'bg-gray-100 border border-gray-200 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      {variation.isOutOfStock ? 'Out of Stock' : 'In Stock'}
+                    </button>
                     {isOwner && (
-                      <>
-                        <button
-                          onClick={() => onToggleStock(product.id, variation.id)}
-                          className={`text-xs px-3 py-2 sm:px-2 sm:py-1 rounded font-medium transition-colors ${
-                            variation.isOutOfStock 
-                              ? 'bg-red-100 text-red-700 hover:bg-red-200' 
-                              : 'bg-gray-100 border border-gray-200 text-gray-600 hover:bg-gray-200'
-                          }`}
-                        >
-                          {variation.isOutOfStock ? 'Out of Stock' : 'In Stock'}
-                        </button>
-                        <button
-                          onClick={() => onDeleteVariation(product.id, variation.id)}
-                          className="text-gray-400 hover:text-red-500 transition-colors p-2 sm:p-1"
-                        >
-                          <Trash2 className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
-                        </button>
-                      </>
-                    )}
-                    {!isOwner && variation.isOutOfStock && (
-                      <span className="text-xs px-3 py-2 sm:px-2 sm:py-1 rounded font-medium bg-red-100 text-red-700">
-                        Out of Stock
-                      </span>
+                      <button
+                        onClick={() => onDeleteVariation(product.id, variation.id)}
+                        className="text-gray-400 hover:text-red-500 transition-colors p-2 sm:p-1"
+                      >
+                        <Trash2 className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+                      </button>
                     )}
                   </div>
                 </div>
@@ -818,24 +811,22 @@ function ProductCard({
                 <p className="text-xs text-gray-400 italic text-center py-2 bg-white rounded-md border border-dashed border-gray-200">No items</p>
               )}
             </div>
-            {isOwner && (
-              <form onSubmit={(e) => handleAdd(e, groupId)} className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder={`Add to ${title}...`}
-                  value={newVarNames[groupId]}
-                  onChange={(e) => setNewVarNames(prev => ({ ...prev, [groupId]: e.target.value }))}
-                  className="flex-1 px-3 py-2 sm:py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
-                />
-                <button
-                  type="submit"
-                  disabled={!newVarNames[groupId].trim()}
-                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white px-4 sm:px-3 py-2 sm:py-1.5 rounded-md text-sm font-medium transition-colors shadow-sm"
-                >
-                  Add
-                </button>
-              </form>
-            )}
+            <form onSubmit={(e) => handleAdd(e, groupId)} className="flex gap-2">
+              <input
+                type="text"
+                placeholder={`Add to ${title}...`}
+                value={newVarNames[groupId]}
+                onChange={(e) => setNewVarNames(prev => ({ ...prev, [groupId]: e.target.value }))}
+                className="flex-1 px-3 py-2 sm:py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
+              />
+              <button
+                type="submit"
+                disabled={!newVarNames[groupId].trim()}
+                className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white px-4 sm:px-3 py-2 sm:py-1.5 rounded-md text-sm font-medium transition-colors shadow-sm"
+              >
+                Add
+              </button>
+            </form>
           </div>
         )}
       </div>
