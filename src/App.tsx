@@ -1,9 +1,46 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Product, Variation, UserProfile } from './types';
-import { Plus, Copy, Check, Trash2, Library, AlertCircle, ImagePlus, X, LogOut, LogIn, Users, Settings, Save, ChevronDown, ChevronRight, ListX, Download } from 'lucide-react';
+import { Product, Variation, UserProfile, PageCategory } from './types';
+import { 
+  Plus, 
+  Copy, 
+  Check, 
+  Library, 
+  AlertCircle, 
+  ImagePlus, 
+  X, 
+  LogOut, 
+  LogIn, 
+  Users, 
+  Settings, 
+  Save, 
+  ListX, 
+  Download,
+  Snowflake,
+  LayoutGrid,
+  ClipboardList,
+  UtensilsCrossed,
+  Sparkles,
+  Package,
+  Layers,
+  Search,
+  Filter
+} from 'lucide-react';
 import { auth, db, signInWithGoogle, logOut } from './firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { collection, doc, onSnapshot, setDoc, deleteDoc, updateDoc, serverTimestamp, query, where, getDoc } from 'firebase/firestore';
+import { 
+  collection, 
+  doc, 
+  onSnapshot, 
+  setDoc, 
+  deleteDoc, 
+  updateDoc, 
+  serverTimestamp, 
+  query, 
+  getDoc 
+} from 'firebase/firestore';
+import { PageNavigation, PAGES_CONFIG } from './components/PageNavigation';
+import { NeededAndRequiredView } from './components/NeededAndRequiredView';
+import { ProductCard } from './components/ProductCard';
 
 enum OperationType {
   CREATE = 'create',
@@ -88,13 +125,24 @@ export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
+  const [remindersCount, setRemindersCount] = useState<number>(0);
+  
+  // Navigation State
+  const [currentPage, setCurrentPage] = useState<PageCategory | 'all'>('refrigerator');
+  const [activeTab, setActiveTab] = useState<'catalog' | 'community' | 'profile' | 'outOfStock'>('catalog');
+  
+  // Product creation form state
   const [newProductName, setNewProductName] = useState('');
   const [newProductImage, setNewProductImage] = useState('');
+  const [newProductCategory, setNewProductCategory] = useState<string>('refrigerator');
+  
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('');
+
   const [copied, setCopied] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [activeTab, setActiveTab] = useState<'catalog' | 'community' | 'profile' | 'outOfStock'>('catalog');
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
@@ -124,6 +172,13 @@ export default function App() {
     });
     return () => unsubscribe();
   }, []);
+
+  // Sync category when switching pages
+  useEffect(() => {
+    if (currentPage !== 'all' && currentPage !== 'needed') {
+      setNewProductCategory(currentPage);
+    }
+  }, [currentPage]);
 
   useEffect(() => {
     if (!user) return;
@@ -158,6 +213,7 @@ export default function App() {
     return () => unsubscribeProfile();
   }, [user]);
 
+  // Fetch products
   useEffect(() => {
     if (!isAuthReady || !user) {
       setProducts([]);
@@ -167,12 +223,35 @@ export default function App() {
     const q = query(collection(db, 'products'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const loadedProducts: Product[] = [];
-      snapshot.forEach((doc) => {
-        loadedProducts.push({ id: doc.id, ...doc.data() } as Product);
+      snapshot.forEach((docSnap) => {
+        loadedProducts.push({ id: docSnap.id, ...docSnap.data() } as Product);
       });
       setProducts(loadedProducts);
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, 'products');
+    });
+
+    return () => unsubscribe();
+  }, [user, isAuthReady]);
+
+  // Fetch reminders count for badges
+  useEffect(() => {
+    if (!isAuthReady || !user) {
+      setRemindersCount(0);
+      return;
+    }
+
+    const q = query(collection(db, 'reminders'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      let pending = 0;
+      snapshot.forEach((docSnap) => {
+        if (!docSnap.data().completed) {
+          pending++;
+        }
+      });
+      setRemindersCount(pending);
+    }, (error) => {
+      console.error('Error fetching reminders count:', error);
     });
 
     return () => unsubscribe();
@@ -196,9 +275,12 @@ export default function App() {
     if (!newProductName.trim() || !user) return;
     
     const newId = Date.now().toString();
+    const assignedCategory = newProductCategory || (currentPage !== 'all' && currentPage !== 'needed' ? currentPage : 'refrigerator');
+
     const newProduct: Omit<Product, 'id'> = {
-      name: newProductName,
+      name: newProductName.trim(),
       imageUrl: newProductImage || 'https://images.unsplash.com/photo-1604719312566-8912e9227c6a?auto=format&fit=crop&q=80&w=300&h=300',
+      category: assignedCategory,
       variations: [],
       ownerId: user.uid,
       createdAt: serverTimestamp()
@@ -215,6 +297,7 @@ export default function App() {
   };
 
   const handleDeleteProduct = async (productId: string) => {
+    if (!window.confirm('هل أنت متأكد من حذف هذا المنتج؟')) return;
     try {
       await deleteDoc(doc(db, 'products', productId));
     } catch (error) {
@@ -229,7 +312,7 @@ export default function App() {
 
     const newVariation: Variation = {
       id: Date.now().toString(),
-      name: variationName,
+      name: variationName.trim(),
       isOutOfStock: false,
       group
     };
@@ -266,6 +349,16 @@ export default function App() {
     }
   };
 
+  const handleChangeProductCategory = async (productId: string, newCategory: string) => {
+    try {
+      await updateDoc(doc(db, 'products', productId), {
+        category: newCategory
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `products/${productId}`);
+    }
+  };
+
   const toggleOutOfStock = async (productId: string, variationId: string) => {
     const product = products.find(p => p.id === productId);
     if (!product) return;
@@ -281,7 +374,40 @@ export default function App() {
     }
   };
 
+  // Product counts per category
+  const productCounts: Record<string, number> = {
+    all: products.length,
+    refrigerator: products.filter(p => p.category === 'refrigerator').length,
+    stands: products.filter(p => p.category === 'stands' || (!p.category && p.category !== 'refrigerator' && p.category !== 'indomie' && p.category !== 'cleaners')).length,
+    indomie: products.filter(p => p.category === 'indomie').length,
+    cleaners: products.filter(p => p.category === 'cleaners').length
+  };
+
+  // Filter products by active page & search query
+  const displayedProducts = products.filter(product => {
+    // Search filter
+    if (searchQuery.trim()) {
+      const matchName = product.name.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchVar = product.variations.some(v => v.name.toLowerCase().includes(searchQuery.toLowerCase()));
+      if (!matchName && !matchVar) return false;
+    }
+
+    if (currentPage === 'all') return true;
+    if (currentPage === 'refrigerator') return product.category === 'refrigerator';
+    if (currentPage === 'indomie') return product.category === 'indomie';
+    if (currentPage === 'cleaners') return product.category === 'cleaners';
+    if (currentPage === 'stands') {
+      return product.category === 'stands' || (!product.category);
+    }
+    return true;
+  });
+
+  // Out of stock calculations
   const outOfStockItems = products.flatMap(p => 
+    p.variations.filter(v => v.isOutOfStock).map(v => `${p.name} - ${v.name}`)
+  );
+
+  const activePageOutOfStockItems = displayedProducts.flatMap(p =>
     p.variations.filter(v => v.isOutOfStock).map(v => `${p.name} - ${v.name}`)
   );
 
@@ -293,6 +419,7 @@ export default function App() {
   };
 
   const handleClearOutOfStock = async () => {
+    if (!window.confirm('هل تريد إرجاع جميع الأصناف الناقصة إلى "متوفر"؟')) return;
     setIsClearing(true);
     try {
       const updatePromises = products.map(product => {
@@ -318,180 +445,283 @@ export default function App() {
   };
 
   if (!isAuthReady) {
-    return <div className="min-h-screen flex items-center justify-center bg-gray-50 text-gray-500">Loading...</div>;
+    return <div className="min-h-screen flex items-center justify-center bg-gray-50 text-gray-500 font-sans">جاري التحميل...</div>;
   }
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 font-sans">
-        <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200 text-center max-w-md w-full mx-4">
-          <Library className="w-12 h-12 text-blue-600 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">مكتبه الهدى</h1>
-          <p className="text-gray-500 mb-8">Sign in to manage your supermarket catalog and track out-of-stock items.</p>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 font-sans p-4" dir="rtl">
+        <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-200 text-center max-w-md w-full">
+          <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <Library className="w-8 h-8" />
+          </div>
+          <h1 className="text-2xl font-black text-gray-900 mb-2">مكتبه الهدى</h1>
+          <p className="text-gray-500 text-sm mb-8">سجل الدخول لإدارة أقسام المتجر، الأصناف، النواقص، ودفتر المطلوب.</p>
           <button
             onClick={signInWithGoogle}
-            className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-medium transition-colors"
+            className="w-full flex items-center justify-center gap-3 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3.5 rounded-2xl font-bold transition-all shadow-md active:scale-95"
           >
             <LogIn className="w-5 h-5" />
-            Sign in with Google
+            تسجيل الدخول عبر Google
           </button>
         </div>
       </div>
     );
   }
 
+  const activePageConfig = PAGES_CONFIG.find(p => p.id === currentPage) || PAGES_CONFIG[0];
+  const ActivePageIcon = activePageConfig.icon;
+
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 font-sans">
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2 shrink-0">
-              <Library className="w-6 h-6 text-blue-600 shrink-0" />
-              <h1 className="text-lg sm:text-xl font-bold text-gray-900 truncate max-w-[120px] sm:max-w-none">مكتبه الهدى</h1>
+    <div className="min-h-screen bg-gray-50/70 text-gray-900 font-sans flex flex-col" dir="rtl">
+      
+      {/* Top Header */}
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-2xs">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2">
+          
+          {/* Logo & Main Title */}
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="w-9 h-9 bg-blue-600 text-white rounded-xl flex items-center justify-center shadow-xs">
+              <Library className="w-5 h-5" />
             </div>
-            <nav className="hidden md:flex items-center gap-1 bg-gray-100 p-1 rounded-lg">
-              <button 
-                onClick={() => setActiveTab('catalog')} 
-                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${activeTab === 'catalog' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-600 hover:text-gray-900'}`}
-              >
-                Catalog
-              </button>
-              <button 
-                onClick={() => setActiveTab('community')} 
-                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${activeTab === 'community' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-600 hover:text-gray-900'}`}
-              >
-                Community
-              </button>
-            </nav>
+            <div className="flex flex-col">
+              <h1 className="text-base sm:text-lg font-black text-gray-900 leading-tight">مكتبه الهدى</h1>
+              <span className="text-[10px] text-gray-400 hidden sm:block">إدارة الأقسام والنواقص</span>
+            </div>
           </div>
-          <div className="flex items-center gap-2 sm:gap-4">
+
+          {/* Center/Prominent Page Switcher Menu (Click to open list on PC & Phone) */}
+          <div className="flex items-center gap-2">
+            <PageNavigation 
+              currentPage={currentPage} 
+              onSelectPage={(page) => {
+                setCurrentPage(page);
+                setActiveTab('catalog');
+              }}
+              productCounts={productCounts}
+              remindersCount={remindersCount}
+            />
+          </div>
+
+          {/* Right Header Controls */}
+          <div className="flex items-center gap-2 sm:gap-3">
             {deferredPrompt && (
               <button
                 onClick={handleInstallClick}
-                className="flex items-center gap-1 sm:gap-2 bg-blue-50 hover:bg-blue-100 text-blue-700 px-2 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-colors border border-blue-200 shrink-0"
+                className="flex items-center gap-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all border border-blue-200 shrink-0"
               >
                 <Download className="w-4 h-4" />
-                <span className="hidden sm:inline">Install App</span>
-                <span className="sm:hidden">Install</span>
+                <span className="hidden sm:inline">تثبيت التطبيق</span>
               </button>
             )}
-            <button onClick={() => setActiveTab('profile')} className="hidden md:flex items-center gap-2 hover:bg-gray-50 p-1.5 rounded-lg transition-colors">
-              <img src={profile?.photoUrl || user.photoURL || 'https://www.gravatar.com/avatar/?d=mp'} alt="Profile" className="w-8 h-8 rounded-full object-cover border border-gray-200" />
-              <span className="text-sm font-medium text-gray-700 hidden sm:block">{profile?.displayName || user.displayName}</span>
+
+            <button 
+              onClick={() => setActiveTab('profile')} 
+              className="hidden md:flex items-center gap-2 hover:bg-gray-100 p-1.5 rounded-xl transition-colors"
+              title="الملف الشخصي"
+            >
+              <img 
+                src={profile?.photoUrl || user.photoURL || 'https://www.gravatar.com/avatar/?d=mp'} 
+                alt="Profile" 
+                className="w-8 h-8 rounded-full object-cover border border-gray-200" 
+              />
+              <span className="text-xs font-bold text-gray-700 max-w-[100px] truncate">{profile?.displayName || user.displayName}</span>
             </button>
-            <div className="hidden md:block w-px h-6 bg-gray-200"></div>
+
             <button
               onClick={logOut}
-              className="hidden md:flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-red-600 transition-colors"
+              className="hidden md:flex items-center gap-1.5 text-xs font-bold text-gray-500 hover:text-red-600 hover:bg-red-50 p-2 rounded-xl transition-colors"
+              title="تسجيل الخروج"
             >
               <LogOut className="w-4 h-4" />
-              <span className="hidden sm:inline">Sign Out</span>
             </button>
           </div>
         </div>
+
+        {/* Horizontal Quick-Scroll Pages Bar (Available on Desktop & Mobile for fast 1-click access) */}
+        <div className="bg-gray-50 border-t border-gray-100 px-4 sm:px-6 lg:px-8 py-2 overflow-x-auto no-scrollbar flex items-center gap-2">
+          {PAGES_CONFIG.map((page) => {
+            const Icon = page.icon;
+            const isSelected = currentPage === page.id && activeTab === 'catalog';
+            const count = page.id === 'needed' ? remindersCount : (productCounts[page.id] || 0);
+
+            return (
+              <button
+                key={page.id}
+                id={`quick-page-${page.id}`}
+                onClick={() => {
+                  setCurrentPage(page.id);
+                  setActiveTab('catalog');
+                }}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
+                  isSelected
+                    ? 'bg-blue-600 text-white shadow-xs scale-102'
+                    : 'bg-white text-gray-700 border border-gray-200/80 hover:bg-gray-100'
+                }`}
+              >
+                <Icon className={`w-3.5 h-3.5 ${isSelected ? 'text-white' : page.color}`} />
+                <span>{page.title}</span>
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-extrabold ${
+                  isSelected ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'
+                }`}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </header>
 
-      {/* Mobile Bottom Nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex items-center justify-around pb-[env(safe-area-inset-bottom,0.5rem)] z-50">
-        <button onClick={() => setActiveTab('catalog')} className={`flex flex-col items-center p-3 ${activeTab === 'catalog' ? 'text-blue-600' : 'text-gray-500'}`}>
-          <Library className="w-6 h-6" />
-          <span className="text-[10px] font-medium mt-1">Catalog</span>
-        </button>
-        <button onClick={() => setActiveTab('outOfStock')} className={`flex flex-col items-center p-3 ${activeTab === 'outOfStock' ? 'text-blue-600' : 'text-gray-500'} relative`}>
-          <div className="relative">
-            <AlertCircle className="w-6 h-6" />
-            {outOfStockItems.length > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
-                {outOfStockItems.length}
-              </span>
-            )}
-          </div>
-          <span className="text-[10px] font-medium mt-1">Shortages</span>
-        </button>
-        <button onClick={() => setActiveTab('community')} className={`flex flex-col items-center p-3 ${activeTab === 'community' ? 'text-blue-600' : 'text-gray-500'}`}>
-          <Users className="w-6 h-6" />
-          <span className="text-[10px] font-medium mt-1">Community</span>
-        </button>
-        <button onClick={() => setActiveTab('profile')} className={`flex flex-col items-center p-3 ${activeTab === 'profile' ? 'text-blue-600' : 'text-gray-500'}`}>
-          <Settings className="w-6 h-6" />
-          <span className="text-[10px] font-medium mt-1">Profile</span>
-        </button>
-      </nav>
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24 md:pb-8">
+      {/* Main Container */}
+      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 pb-28 md:pb-10">
         
-        {(activeTab === 'catalog' || activeTab === 'outOfStock') && (
+        {/* VIEW 1: NEEDED & REQUIRED NOTEBOOK PAGE (المطلوب والنواقص وإعادة الطلب) */}
+        {currentPage === 'needed' && activeTab === 'catalog' && (
+          <NeededAndRequiredView 
+            user={user} 
+            products={products}
+            onToggleStock={toggleOutOfStock}
+          />
+        )}
+
+        {/* VIEW 2: PRODUCT CATALOG PAGES (الثلاجة / الستاندات / إندومي / المنظفات / الكل) */}
+        {currentPage !== 'needed' && (activeTab === 'catalog' || activeTab === 'outOfStock') && (
           <div className="flex flex-col lg:flex-row gap-8">
-            {/* Left Column: Products */}
-            <div className={`flex-1 space-y-8 ${activeTab === 'catalog' ? 'block' : 'hidden lg:block'}`}>
-              {/* Add Product Form */}
-              <section className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <Plus className="w-5 h-5" /> Add New Product
-                </h2>
-                <form onSubmit={handleAddProduct} className="flex flex-col sm:flex-row gap-4">
+            
+            {/* Left Column: Product Sections & Add Form */}
+            <div className={`flex-1 space-y-6 ${activeTab === 'catalog' ? 'block' : 'hidden lg:block'}`}>
+              
+              {/* Active Page Header Banner & Search */}
+              <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-200/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className={`p-3 rounded-2xl ${activePageConfig.bgColor} ${activePageConfig.color} shrink-0`}>
+                    <ActivePageIcon className="w-6 h-6 sm:w-7 sm:h-7" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-lg sm:text-xl font-extrabold text-gray-900">{activePageConfig.title}</h2>
+                      <span className="text-xs bg-gray-100 text-gray-700 font-bold px-2 py-0.5 rounded-full">
+                        {displayedProducts.length} منتج
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-0.5">{activePageConfig.subtitle}</p>
+                  </div>
+                </div>
+
+                {/* Quick Search */}
+                <div className="relative w-full sm:w-64">
                   <input
                     type="text"
-                    placeholder="Product Name (e.g., Coca Cola)"
-                    value={newProductName}
-                    onChange={(e) => setNewProductName(e.target.value)}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all min-w-0"
-                    required
+                    placeholder="بحث في المنتجات والأطعمة..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-8 pr-9 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                   />
-                  <div className="flex-1 relative flex items-center min-w-0">
-                    {newProductImage.startsWith('data:') ? (
-                      <div className="flex-1 flex items-center justify-between px-4 py-2 border border-blue-300 bg-blue-50 rounded-lg min-w-0">
-                        <span className="text-sm text-blue-700 font-medium truncate">Image uploaded</span>
-                        <button 
-                          type="button" 
-                          onClick={() => {
-                            setNewProductImage('');
-                            if (fileInputRef.current) fileInputRef.current.value = '';
-                          }} 
-                          className="text-blue-500 hover:text-blue-700 p-1 shrink-0"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ) : (
-                      <>
-                        <input
-                          type="url"
-                          placeholder="Image URL (optional)"
-                          value={newProductImage}
-                          onChange={(e) => setNewProductImage(e.target.value)}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all pr-12 min-w-0"
-                        />
-                        <button 
-                          type="button"
-                          onClick={() => fileInputRef.current?.click()}
-                          className="absolute right-2 p-1.5 text-gray-400 hover:text-gray-600 cursor-pointer bg-white rounded-md transition-colors shrink-0" 
-                          title="Upload Image"
-                        >
-                          <ImagePlus className="w-5 h-5" />
-                        </button>
-                        <input 
-                          type="file" 
-                          accept="image/*" 
-                          className="hidden" 
-                          ref={fileInputRef}
-                          onChange={handleImageUpload} 
-                        />
-                      </>
-                    )}
+                  <Search className="w-4 h-4 text-gray-400 absolute right-3 top-2.5" />
+                  {searchQuery && (
+                    <button 
+                      onClick={() => setSearchQuery('')}
+                      className="absolute left-2.5 top-2.5 text-gray-400 hover:text-gray-600"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Add Product Form */}
+              <section className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-blue-100">
+                <h3 className="text-sm sm:text-base font-bold text-gray-900 mb-3.5 flex items-center gap-2">
+                  <Plus className="w-4 h-4 text-blue-600" /> 
+                  <span>إضافة منتج جديد لقسم: <strong className="text-blue-600">{activePageConfig.title}</strong></span>
+                </h3>
+                
+                <form onSubmit={handleAddProduct} className="flex flex-col gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                    
+                    {/* Product Name Input */}
+                    <div className="sm:col-span-5">
+                      <input
+                        type="text"
+                        placeholder="اسم المنتج (مثال: بيبسي، شيبسي فلفل، إندومي فراخ)..."
+                        value={newProductName}
+                        onChange={(e) => setNewProductName(e.target.value)}
+                        className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-xs sm:text-sm font-medium min-w-0"
+                        required
+                      />
+                    </div>
+
+                    {/* Category Selector */}
+                    <div className="sm:col-span-3">
+                      <select
+                        value={newProductCategory}
+                        onChange={(e) => setNewProductCategory(e.target.value)}
+                        className="w-full px-3 py-2.5 bg-gray-50 border border-gray-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none text-xs sm:text-sm font-bold text-gray-700 cursor-pointer"
+                      >
+                        <option value="refrigerator">❄️ الثلاجة</option>
+                        <option value="stands">🏷️ الستاندات</option>
+                        <option value="indomie">🍜 إندومي</option>
+                        <option value="cleaners">🧼 المناديل والمنظفات</option>
+                      </select>
+                    </div>
+
+                    {/* Image Upload Input */}
+                    <div className="sm:col-span-4 relative flex items-center min-w-0">
+                      {newProductImage.startsWith('data:') ? (
+                        <div className="w-full flex items-center justify-between px-3 py-2 border border-blue-300 bg-blue-50 rounded-xl min-w-0">
+                          <span className="text-xs text-blue-700 font-bold truncate">تم اختيار الصورة ✓</span>
+                          <button 
+                            type="button" 
+                            onClick={() => {
+                              setNewProductImage('');
+                              if (fileInputRef.current) fileInputRef.current.value = '';
+                            }} 
+                            className="text-blue-500 hover:text-blue-700 p-1 shrink-0"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <input
+                            type="url"
+                            placeholder="رابط صورة (اختياري)"
+                            value={newProductImage}
+                            onChange={(e) => setNewProductImage(e.target.value)}
+                            className="w-full pl-10 pr-3 py-2.5 bg-gray-50 border border-gray-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none text-xs min-w-0"
+                          />
+                          <button 
+                            type="button" 
+                            onClick={() => fileInputRef.current?.click()}
+                            className="absolute left-1.5 p-1.5 text-gray-500 hover:text-blue-600 cursor-pointer bg-white border border-gray-200 rounded-lg transition-colors shrink-0 shadow-2xs" 
+                            title="رفع صورة من الجهاز"
+                          >
+                            <ImagePlus className="w-4 h-4" />
+                          </button>
+                          <input 
+                            type="file" 
+                            accept="image/*" 
+                            className="hidden" 
+                            ref={fileInputRef}
+                            onChange={handleImageUpload} 
+                          />
+                        </>
+                      )}
+                    </div>
                   </div>
+
                   <button
                     type="submit"
-                    className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors whitespace-nowrap shrink-0"
+                    className="w-full sm:w-auto self-end bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all shadow-sm active:scale-95"
                   >
-                    Add Product
+                    حفظ وإضافة المنتج
                   </button>
                 </form>
               </section>
 
               {/* Product Grid */}
               <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {products.map(product => (
+                {displayedProducts.map(product => (
                   <ProductCard 
                     key={product.id} 
                     product={product} 
@@ -501,57 +731,82 @@ export default function App() {
                     onDeleteProduct={handleDeleteProduct}
                     onDeleteVariation={handleDeleteVariation}
                     onUpdateImage={handleUpdateProductImage}
+                    onChangeCategory={handleChangeProductCategory}
                   />
                 ))}
-                {products.length === 0 && (
-                  <div className="col-span-full py-12 text-center text-gray-500 bg-white rounded-xl border border-dashed border-gray-300">
-                    No products added yet. Add your first product above!
+                
+                {displayedProducts.length === 0 && (
+                  <div className="col-span-full py-16 text-center text-gray-500 bg-white rounded-2xl border border-dashed border-gray-300 p-6">
+                    <ActivePageIcon className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                    <h4 className="text-base font-bold text-gray-700">لا توجد منتجات في صفحة "{activePageConfig.title}"</h4>
+                    <p className="text-xs text-gray-400 mt-1 max-w-sm mx-auto">
+                      أضف منتجك الأول من النموذج أعلاه أو اختر قسماً آخر من القائمة في الأعلى.
+                    </p>
                   </div>
                 )}
               </section>
             </div>
 
-            {/* Right Column: Out of Stock List */}
+            {/* Right Column: Out of Stock List / Shortages */}
             <div className={`w-full lg:w-96 shrink-0 ${activeTab === 'outOfStock' ? 'block' : 'hidden lg:block'}`}>
-              <div className="bg-white rounded-xl shadow-sm border border-red-100 overflow-hidden sticky top-24">
-                <div className="bg-red-50 p-4 border-b border-red-100 flex items-center justify-between">
-                  <h2 className="text-lg font-semibold text-red-800 flex items-center gap-2">
-                    <AlertCircle className="w-5 h-5" /> Out of Stock
-                  </h2>
-                  <span className="bg-red-100 text-red-800 text-xs font-bold px-2.5 py-1 rounded-full">
-                    {outOfStockItems.length} items
+              <div className="bg-white rounded-2xl shadow-sm border border-red-100 overflow-hidden sticky top-24">
+                <div className="bg-gradient-to-r from-red-600 to-rose-600 p-4 text-white flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="w-5 h-5" />
+                    <h3 className="text-sm sm:text-base font-extrabold">قائمة النواقص (Out of Stock)</h3>
+                  </div>
+                  <span className="bg-white/20 text-white text-xs font-black px-2.5 py-0.5 rounded-full">
+                    {outOfStockItems.length} صنف
                   </span>
                 </div>
                 
-                <div className="p-4">
+                <div className="p-4 space-y-4">
                   {outOfStockItems.length > 0 ? (
                     <>
                       <textarea
                         readOnly
-                        value={outOfStockItems.join('\n')}
-                        className="w-full h-64 p-3 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700 font-mono resize-none focus:outline-none mb-4"
+                        value={outOfStockItems.map((item, i) => `${i + 1}. ${item}`).join('\n')}
+                        className="w-full h-64 p-3 bg-gray-50 border border-gray-200 rounded-xl text-xs sm:text-sm text-gray-800 font-medium leading-relaxed resize-none focus:outline-none"
                       />
-                      <div className="flex flex-col sm:flex-row gap-2">
+                      
+                      <div className="flex flex-col gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCurrentPage('needed');
+                            setActiveTab('catalog');
+                          }}
+                          className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all active:scale-95 shadow-xs"
+                        >
+                          <ClipboardList className="w-4 h-4" />
+                          فتح صفحة النواقص وإعادة الطلب
+                        </button>
+
                         <button
                           onClick={handleCopy}
-                          className="flex-1 flex items-center justify-center gap-2 bg-gray-900 hover:bg-gray-800 text-white px-4 py-2.5 rounded-lg font-medium transition-colors"
+                          className="w-full flex items-center justify-center gap-2 bg-gray-900 hover:bg-gray-800 text-white px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all active:scale-95 shadow-xs"
                         >
-                          {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                          {copied ? 'Copied!' : 'Copy to Clipboard'}
+                          {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                          {copied ? 'تم نسخ النواقص للحافظة!' : 'نسخ قائمة النواقص'}
                         </button>
+                        
                         <button
                           onClick={handleClearOutOfStock}
                           disabled={isClearing}
-                          className="flex-1 flex items-center justify-center gap-2 bg-red-100 hover:bg-red-200 text-red-700 disabled:opacity-50 px-4 py-2.5 rounded-lg font-medium transition-colors"
+                          className="w-full flex items-center justify-center gap-2 bg-red-50 hover:bg-red-100 text-red-700 disabled:opacity-50 px-4 py-2 rounded-xl font-bold text-xs transition-colors border border-red-200"
                         >
                           <ListX className="w-4 h-4" />
-                          {isClearing ? 'Clearing...' : 'Clear All'}
+                          {isClearing ? 'جاري التصفير...' : 'تصفير كل النواقص (متوفر للجميع)'}
                         </button>
                       </div>
                     </>
                   ) : (
-                    <div className="text-center py-8 text-gray-500 text-sm">
-                      All items are currently in stock.
+                    <div className="text-center py-12 text-gray-500">
+                      <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-2">
+                        <Check className="w-6 h-6" />
+                      </div>
+                      <p className="text-sm font-bold text-gray-700">جميع الأصناف متوفرة بالمحل</p>
+                      <p className="text-xs text-gray-400 mt-1">عند تحويل أي صنف إلى "ناقص" سيظهر هنا فوراً.</p>
                     </div>
                   )}
                 </div>
@@ -560,11 +815,80 @@ export default function App() {
           </div>
         )}
 
+        {/* VIEW 3: COMMUNITY */}
         {activeTab === 'community' && <CommunityView />}
         
-        {activeTab === 'profile' && <ProfileView user={user} profile={profile} onInstallClick={handleInstallClick} canInstall={!!deferredPrompt} />}
+        {/* VIEW 4: PROFILE */}
+        {activeTab === 'profile' && (
+          <ProfileView 
+            user={user} 
+            profile={profile} 
+            onInstallClick={handleInstallClick} 
+            canInstall={!!deferredPrompt} 
+          />
+        )}
 
       </main>
+
+      {/* Mobile Bottom Nav */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-200 flex items-center justify-around pb-[env(safe-area-inset-bottom,0.5rem)] z-50 shadow-lg">
+        <button 
+          onClick={() => setActiveTab('catalog')} 
+          className={`flex flex-col items-center p-2.5 ${activeTab === 'catalog' ? 'text-blue-600 font-bold' : 'text-gray-400 font-medium'}`}
+        >
+          <Library className="w-5 h-5" />
+          <span className="text-[10px] mt-1">الأقسام</span>
+        </button>
+
+        <button 
+          onClick={() => {
+            setCurrentPage('needed');
+            setActiveTab('catalog');
+          }} 
+          className={`flex flex-col items-center p-2.5 relative ${currentPage === 'needed' && activeTab === 'catalog' ? 'text-emerald-600 font-bold' : 'text-gray-400 font-medium'}`}
+        >
+          <div className="relative">
+            <ClipboardList className="w-5 h-5" />
+            {remindersCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-emerald-600 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                {remindersCount}
+              </span>
+            )}
+          </div>
+          <span className="text-[10px] mt-1">المطلوب</span>
+        </button>
+
+        <button 
+          onClick={() => setActiveTab('outOfStock')} 
+          className={`flex flex-col items-center p-2.5 ${activeTab === 'outOfStock' ? 'text-red-600 font-bold' : 'text-gray-400 font-medium'} relative`}
+        >
+          <div className="relative">
+            <AlertCircle className="w-5 h-5" />
+            {outOfStockItems.length > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                {outOfStockItems.length}
+              </span>
+            )}
+          </div>
+          <span className="text-[10px] mt-1">النواقص</span>
+        </button>
+
+        <button 
+          onClick={() => setActiveTab('community')} 
+          className={`flex flex-col items-center p-2.5 ${activeTab === 'community' ? 'text-blue-600 font-bold' : 'text-gray-400 font-medium'}`}
+        >
+          <Users className="w-5 h-5" />
+          <span className="text-[10px] mt-1">المستخدمين</span>
+        </button>
+
+        <button 
+          onClick={() => setActiveTab('profile')} 
+          className={`flex flex-col items-center p-2.5 ${activeTab === 'profile' ? 'text-blue-600 font-bold' : 'text-gray-400 font-medium'}`}
+        >
+          <Settings className="w-5 h-5" />
+          <span className="text-[10px] mt-1">حسابي</span>
+        </button>
+      </nav>
     </div>
   );
 }
@@ -583,24 +907,33 @@ function CommunityView() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
-      <h2 className="text-2xl font-bold flex items-center gap-2 text-gray-900"><Users className="w-6 h-6 text-blue-600" /> Community Members</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-bold flex items-center gap-2 text-gray-900">
+          <Users className="w-6 h-6 text-blue-600" /> أعضاء ومستخدمي النظام
+        </h2>
+        <span className="text-xs bg-blue-50 text-blue-700 px-3 py-1 rounded-full font-bold">
+          {users.length} مستخدم
+        </span>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
         {users.map(u => (
-          <div key={u.uid} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center text-center gap-4 hover:shadow-md transition-shadow">
+          <div key={u.uid} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center text-center gap-3 hover:shadow-md transition-shadow">
             <img 
               src={u.photoUrl || 'https://www.gravatar.com/avatar/?d=mp'} 
               alt={u.displayName} 
-              className="w-24 h-24 rounded-full object-cover border-4 border-gray-50 shadow-sm" 
+              className="w-20 h-20 rounded-full object-cover border-3 border-blue-50 shadow-xs" 
               onError={(e) => { (e.target as HTMLImageElement).src = 'https://www.gravatar.com/avatar/?d=mp'; }} 
             />
             <div>
-              <h3 className="font-bold text-lg text-gray-900">{u.displayName}</h3>
+              <h3 className="font-bold text-base text-gray-900">{u.displayName}</h3>
+              <span className="text-[11px] text-gray-400">عضو نشط</span>
             </div>
           </div>
         ))}
         {users.length === 0 && (
-          <div className="col-span-full py-12 text-center text-gray-500 bg-white rounded-xl border border-dashed border-gray-300">
-            No community members found.
+          <div className="col-span-full py-12 text-center text-gray-500 bg-white rounded-2xl border border-dashed border-gray-300">
+            لا يوجد أعضاء حالياً.
           </div>
         )}
       </div>
@@ -643,7 +976,7 @@ function ProfileView({ user, profile, onInstallClick, canInstall }: { user: User
         photoUrl,
         updatedAt: serverTimestamp()
       });
-      alert('Profile updated successfully!');
+      alert('تم تحديث الملف الشخصي بنجاح!');
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `users/${user.uid}`);
     } finally {
@@ -654,243 +987,63 @@ function ProfileView({ user, profile, onInstallClick, canInstall }: { user: User
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       {canInstall && (
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
           <div>
-            <h3 className="text-blue-900 font-bold text-lg">Download Android App</h3>
-            <p className="text-blue-700 text-sm mt-1">Install مكتبه الهدى on your device for a better experience.</p>
+            <h3 className="font-extrabold text-base sm:text-lg">تثبيت تطبيق مكتبه الهدى</h3>
+            <p className="text-blue-100 text-xs mt-0.5">ثبّت التطبيق على هاتفك للوصول السريع والعمل حتى بدون إنترنت.</p>
           </div>
           <button
             onClick={onInstallClick}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-medium transition-colors whitespace-nowrap"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-white text-blue-700 hover:bg-blue-50 px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all whitespace-nowrap shadow-sm active:scale-95"
           >
-            <Download className="w-5 h-5" />
-            Download App
+            <Download className="w-4 h-4" />
+            تثبيت التطبيق
           </button>
         </div>
       )}
 
-      <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100">
-        <h2 className="text-2xl font-bold mb-6 flex items-center gap-2 text-gray-900"><Settings className="w-6 h-6 text-blue-600" /> Edit Profile</h2>
+      <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-gray-200/80">
+        <h2 className="text-xl font-bold mb-6 flex items-center gap-2 text-gray-900">
+          <Settings className="w-5 h-5 text-blue-600" /> تعديل الملف الشخصي
+        </h2>
         <form onSubmit={handleSave} className="space-y-6">
-        <div className="flex flex-col items-center gap-4 mb-6">
-          <img 
-            src={photoUrl || 'https://www.gravatar.com/avatar/?d=mp'} 
-            alt="Profile" 
-            className="w-32 h-32 rounded-full object-cover border-4 border-gray-50 shadow-sm" 
-            onError={(e) => { (e.target as HTMLImageElement).src = 'https://www.gravatar.com/avatar/?d=mp'; }}
-          />
-          <button 
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
-          >
-            <ImagePlus className="w-4 h-4" /> Change Picture
-          </button>
-          <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleImageUpload} />
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Display Name</label>
-          <input 
-            type="text" 
-            value={displayName} 
-            onChange={e => setDisplayName(e.target.value)} 
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
-            required 
-            maxLength={100}
-          />
-        </div>
-
-        <button 
-          type="submit" 
-          disabled={isSaving} 
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-        >
-          <Save className="w-5 h-5" /> {isSaving ? 'Saving...' : 'Save Profile'}
-        </button>
-      </form>
-      </div>
-    </div>
-  );
-}
-
-function ProductCard({ 
-  product, 
-  onAddVariation, 
-  onToggleStock,
-  onDeleteProduct,
-  onDeleteVariation,
-  onUpdateImage,
-  isOwner
-}: { 
-  product: Product; 
-  onAddVariation: (productId: string, name: string, group: '5' | '10' | 'other') => void;
-  onToggleStock: (productId: string, variationId: string) => void;
-  onDeleteProduct: (productId: string) => void;
-  onDeleteVariation: (productId: string, variationId: string) => void;
-  onUpdateImage: (productId: string, newImageUrl: string) => void;
-  isOwner: boolean;
-}) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [newVarNames, setNewVarNames] = useState<{ '5': string, '10': string, 'other': string }>({ '5': '', '10': '', 'other': '' });
-  const [expandedGroups, setExpandedGroups] = useState<{ '5': boolean, '10': boolean, 'other': boolean }>({ '5': false, '10': false, 'other': false });
-  const [isUpdatingImage, setIsUpdatingImage] = useState(false);
-
-  const handleImageEdit = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      try {
-        setIsUpdatingImage(true);
-        const compressedBase64 = await compressImage(file, 800, 800, 0.7);
-        await onUpdateImage(product.id, compressedBase64);
-      } catch (error) {
-        console.error("Error updating image:", error);
-        alert("Failed to update image. Please try a smaller file.");
-      } finally {
-        setIsUpdatingImage(false);
-      }
-    }
-  };
-
-  const handleAdd = (e: React.FormEvent, group: '5' | '10' | 'other') => {
-    e.preventDefault();
-    onAddVariation(product.id, newVarNames[group], group);
-    setNewVarNames(prev => ({ ...prev, [group]: '' }));
-  };
-
-  const renderGroup = (groupId: '5' | '10' | 'other', title: string) => {
-    const groupVars = product.variations.filter(v => 
-      v.group === groupId || (!v.group && groupId === 'other')
-    );
-    const isExpanded = expandedGroups[groupId];
-
-    return (
-      <div className="mb-4 last:mb-0 bg-gray-50/50 rounded-lg border border-gray-100 overflow-hidden">
-        <button 
-          onClick={() => setExpandedGroups(prev => ({ ...prev, [groupId]: !prev[groupId] }))}
-          className="w-full p-3 flex items-center justify-between hover:bg-gray-100/50 transition-colors"
-        >
-          <div className="flex items-center gap-2">
-            {isExpanded ? <ChevronDown className="w-4 h-4 text-gray-500" /> : <ChevronRight className="w-4 h-4 text-gray-500" />}
-            <h4 className="text-sm font-bold text-gray-800 flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-              {title}
-            </h4>
-          </div>
-          <span className="text-xs font-normal text-gray-500 bg-white px-2 py-0.5 rounded-full border border-gray-200">
-            {groupVars.length}
-          </span>
-        </button>
-        
-        {isExpanded && (
-          <div className="p-3 pt-0 border-t border-gray-100/50 mt-1">
-            <div className="space-y-2 mb-3 mt-2">
-              {groupVars.map(variation => (
-                <div 
-                  key={variation.id} 
-                  className={`flex flex-col sm:flex-row sm:items-center justify-between p-2 gap-2 rounded-md border ${
-                    variation.isOutOfStock ? 'bg-red-50 border-red-200' : 'bg-white border-gray-200 shadow-sm'
-                  }`}
-                >
-                  <span className={`text-sm leading-relaxed break-words min-w-0 ${variation.isOutOfStock ? 'text-red-700 font-medium' : 'text-gray-700'}`}>
-                    {variation.name}
-                  </span>
-                  <div className="flex items-center justify-end gap-2 shrink-0">
-                    <button
-                      onClick={() => onToggleStock(product.id, variation.id)}
-                      className={`text-xs px-3 py-2 sm:px-2 sm:py-1 rounded font-medium transition-colors ${
-                        variation.isOutOfStock 
-                          ? 'bg-red-100 text-red-700 hover:bg-red-200' 
-                          : 'bg-gray-100 border border-gray-200 text-gray-600 hover:bg-gray-200'
-                      }`}
-                    >
-                      {variation.isOutOfStock ? 'Out of Stock' : 'In Stock'}
-                    </button>
-                    {isOwner && (
-                      <button
-                        onClick={() => onDeleteVariation(product.id, variation.id)}
-                        className="text-gray-400 hover:text-red-500 transition-colors p-2 sm:p-1"
-                      >
-                        <Trash2 className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
-              {groupVars.length === 0 && (
-                <p className="text-xs text-gray-400 italic text-center py-2 bg-white rounded-md border border-dashed border-gray-200">No items</p>
-              )}
-            </div>
-            <form onSubmit={(e) => handleAdd(e, groupId)} className="flex gap-2">
-              <input
-                type="text"
-                placeholder={`Add to ${title}...`}
-                value={newVarNames[groupId]}
-                onChange={(e) => setNewVarNames(prev => ({ ...prev, [groupId]: e.target.value }))}
-                className="flex-1 px-3 py-2 sm:py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white min-w-0"
-              />
-              <button
-                type="submit"
-                disabled={!newVarNames[groupId].trim()}
-                className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white px-4 sm:px-3 py-2 sm:py-1.5 rounded-md text-sm font-medium transition-colors shadow-sm shrink-0"
-              >
-                Add
-              </button>
-            </form>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col transition-shadow hover:shadow-md">
-      <div className="relative h-48 bg-gray-100 group">
-        <img 
-          src={product.imageUrl} 
-          alt={product.name} 
-          className="w-full h-full object-cover"
-          onError={(e) => {
-            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1604719312566-8912e9227c6a?auto=format&fit=crop&q=80&w=300&h=300';
-          }}
-        />
-        {isUpdatingImage && (
-          <div className="absolute inset-0 bg-white/60 flex items-center justify-center backdrop-blur-sm">
-            <span className="text-sm font-medium text-gray-800 bg-white px-3 py-1 rounded-full shadow-sm">Updating...</span>
-          </div>
-        )}
-        {isOwner && (
-          <div className="absolute top-2 right-2 flex gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all">
+          <div className="flex flex-col items-center gap-4 mb-6">
+            <img 
+              src={photoUrl || 'https://www.gravatar.com/avatar/?d=mp'} 
+              alt="Profile" 
+              className="w-28 h-28 rounded-full object-cover border-4 border-gray-100 shadow-sm" 
+              onError={(e) => { (e.target as HTMLImageElement).src = 'https://www.gravatar.com/avatar/?d=mp'; }}
+            />
             <button 
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="p-2 sm:p-1.5 bg-white/90 hover:bg-blue-100 text-gray-600 hover:text-blue-600 rounded-md cursor-pointer shadow-sm" 
-              title="Change Image"
-              disabled={isUpdatingImage}
+              className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-xl text-xs font-bold transition-colors flex items-center gap-2"
             >
-              <ImagePlus className="w-5 h-5 sm:w-4 sm:h-4" />
+              <ImagePlus className="w-4 h-4" /> تغيير الصورة الشخصية
             </button>
-            <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleImageEdit} disabled={isUpdatingImage} />
-            <button 
-              onClick={() => onDeleteProduct(product.id)}
-              className="p-2 sm:p-1.5 bg-white/90 hover:bg-red-100 text-gray-600 hover:text-red-600 rounded-md shadow-sm"
-              title="Delete Product"
-              disabled={isUpdatingImage}
-            >
-              <Trash2 className="w-5 h-5 sm:w-4 sm:h-4" />
-            </button>
+            <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleImageUpload} />
           </div>
-        )}
-      </div>
-      
-      <div className="p-4 flex-1 flex flex-col">
-        <h3 className="text-lg font-bold text-gray-900 mb-3">{product.name}</h3>
-        
-        <div className="flex-1 flex flex-col gap-2">
-          {renderGroup('5', 'Price: 5')}
-          {renderGroup('10', 'Price: 10')}
-          {renderGroup('other', 'Other Prices')}
-        </div>
+          
+          <div>
+            <label className="block text-xs font-bold text-gray-700 mb-1.5">الاسم المعروض</label>
+            <input 
+              type="text" 
+              value={displayName} 
+              onChange={e => setDisplayName(e.target.value)} 
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium" 
+              required 
+              maxLength={100}
+            />
+          </div>
+
+          <button 
+            type="submit" 
+            disabled={isSaving} 
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50 shadow-sm active:scale-95"
+          >
+            <Save className="w-4 h-4" /> {isSaving ? 'جاري الحفظ...' : 'حفظ التعديلات'}
+          </button>
+        </form>
       </div>
     </div>
   );

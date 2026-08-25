@@ -19,6 +19,7 @@
       "properties": {
         "name": { "type": "string" },
         "imageUrl": { "type": "string" },
+        "category": { "type": "string" },
         "variations": {
           "type": "array",
           "items": { "$ref": "#/entities/Variation" }
@@ -27,6 +28,19 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["name", "imageUrl", "variations", "ownerId", "createdAt"]
+    },
+    "ReminderItem": {
+      "title": "Reminder Item",
+      "description": "A notebook reminder/shortage note item.",
+      "type": "object",
+      "properties": {
+        "text": { "type": "string" },
+        "completed": { "type": "boolean" },
+        "createdBy": { "type": "string" },
+        "authorName": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["text", "completed", "createdBy", "createdAt"]
     },
     "UserProfile": {
       "title": "User Profile",
@@ -45,6 +59,10 @@
     "products/{productId}": {
       "schema": { "$ref": "#/entities/Product" },
       "description": "Products owned by users."
+    },
+    "reminders/{reminderId}": {
+      "schema": { "$ref": "#/entities/ReminderItem" },
+      "description": "Shared notebook reminder/needed items."
     },
     "users/{userId}": {
       "schema": { "$ref": "#/entities/UserProfile" },

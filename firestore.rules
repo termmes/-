@@ -59,11 +59,23 @@ service cloud.firestore {
     }
 
     function isValidProduct() {
-      return hasOnlyAllowedFields(['name', 'imageUrl', 'variations', 'ownerId', 'createdAt']) &&
+      return (request.resource.data.keys().hasOnly(['name', 'imageUrl', 'variations', 'ownerId', 'createdAt']) ||
+              request.resource.data.keys().hasOnly(['name', 'imageUrl', 'category', 'variations', 'ownerId', 'createdAt'])) &&
              validStringLength('name', 1, 100) &&
              validStringLength('imageUrl', 0, 1000000) && // Allow large base64 images
+             (!('category' in request.resource.data) || validStringLength('category', 1, 50)) &&
              areValidVariations(request.resource.data.variations) &&
              request.resource.data.ownerId is string &&
+             request.resource.data.createdAt is timestamp;
+    }
+
+    function isValidReminderItem() {
+      return (request.resource.data.keys().hasOnly(['text', 'completed', 'createdBy', 'createdAt']) ||
+              request.resource.data.keys().hasOnly(['text', 'completed', 'createdBy', 'authorName', 'createdAt'])) &&
+             validStringLength('text', 1, 500) &&
+             request.resource.data.completed is bool &&
+             request.resource.data.createdBy is string &&
+             (!('authorName' in request.resource.data) || validStringLength('authorName', 0, 100)) &&
              request.resource.data.createdAt is timestamp;
     }
 
@@ -80,8 +92,20 @@ service cloud.firestore {
                        request.resource.data.createdAt == resource.data.createdAt &&
                        (
                          isDocOwner() || 
-                         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['variations'])
+                         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['variations']) ||
+                         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['variations', 'category'])
                        );
+    }
+
+    match /reminders/{reminderId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && 
+                       isValidReminderItem() && 
+                       request.resource.data.createdBy == request.auth.uid;
+      allow update: if isAuthenticated() && 
+                       isValidReminderItem() && 
+                       request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if isAuthenticated();
     }
 
     match /users/{userId} {

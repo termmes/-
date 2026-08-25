@@ -1,5 +1,6 @@
 {
   "name": "مكتبه الهدى",
   "description": "Manage supermarket products, variations, and generate out-of-stock lists for merchants.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
