@@ -42,43 +42,44 @@
       },
       "required": ["text", "completed", "createdBy", "createdAt"]
     },
+    "ProfileCustomization": {
+      "title": "Profile Customization",
+      "description": "Customization options for user profile cards and banners.",
+      "type": "object",
+      "properties": {
+        "bannerTheme": { "type": "string" },
+        "bannerCustomUrl": { "type": "string" },
+        "avatarFrame": { "type": "string" },
+        "avatarShape": { "type": "string" },
+        "cardTheme": { "type": "string" },
+        "animatedEffect": { "type": "string" },
+        "badgeTitle": { "type": "string" },
+        "badgeIcon": { "type": "string" },
+        "badgeColor": { "type": "string" },
+        "fontStyle": { "type": "string" }
+      }
+    },
     "UserProfile": {
       "title": "User Profile",
-      "description": "Public profile for a user with Instagram-like features.",
+      "description": "Public profile for a user with gaming/custom themes and badges.",
       "type": "object",
       "properties": {
         "uid": { "type": "string" },
         "displayName": { "type": "string" },
         "photoUrl": { "type": "string" },
         "bio": { "type": "string" },
-        "songUrl": { "type": "string" },
-        "songTitle": { "type": "string" },
-        "songArtist": { "type": "string" },
+        "email": { "type": "string" },
         "role": { "type": "string" },
+        "customization": { "$ref": "#/entities/ProfileCustomization" },
         "updatedAt": { "type": "string", "format": "date-time" }
       },
       "required": ["uid", "displayName", "photoUrl", "updatedAt"]
-    },
-    "Story": {
-      "title": "User Story",
-      "description": "Instagram-style story for user profile and community.",
-      "type": "object",
-      "properties": {
-        "userId": { "type": "string" },
-        "authorName": { "type": "string" },
-        "authorPhoto": { "type": "string" },
-        "mediaUrl": { "type": "string" },
-        "caption": { "type": "string" },
-        "bgColor": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["userId", "authorName", "createdAt"]
     }
   },
   "firestore": {
     "products/{productId}": {
       "schema": { "$ref": "#/entities/Product" },
-      "description": "Products owned by users."
+      "description": "Products owned and managed by staff and users."
     },
     "reminders/{reminderId}": {
       "schema": { "$ref": "#/entities/ReminderItem" },
@@ -86,11 +87,7 @@
     },
     "users/{userId}": {
       "schema": { "$ref": "#/entities/UserProfile" },
-      "description": "User profiles."
-    },
-    "stories/{storyId}": {
-      "schema": { "$ref": "#/entities/Story" },
-      "description": "User stories for community."
+      "description": "User profiles and custom themes."
     }
   }
 }

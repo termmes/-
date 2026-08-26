@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { User } from 'firebase/auth';
 import { UserProfile, ProfileCustomization } from '../types';
 import { db } from '../firebase';
-import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { compressImage } from '../utils';
 import { ProfileHeaderDisplay } from './ProfileHeaderDisplay';
 import { 
@@ -146,37 +146,35 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
     try {
       const customizationData: ProfileCustomization = {
-        bannerTheme,
-        bannerCustomUrl,
-        avatarFrame,
-        avatarShape,
+        bannerTheme: bannerTheme || 'classic-blue',
+        bannerCustomUrl: bannerCustomUrl || '',
+        avatarFrame: avatarFrame || 'classic-white',
+        avatarShape: avatarShape || 'circle',
         cardTheme: 'glass',
-        animatedEffect,
+        animatedEffect: animatedEffect || 'none',
         badgeTitle: badgeTitle.trim() || 'عضو معتمد',
         badgeIcon: badgeIcon.trim() || '🛡️',
-        badgeColor,
+        badgeColor: badgeColor || '#3b82f6',
         fontStyle: 'default'
       };
 
-      await updateDoc(doc(db, 'users', user.uid), {
-        displayName: displayName.trim(),
-        photoUrl,
+      const profilePayload = {
+        uid: user.uid,
+        displayName: displayName.trim() || user.displayName || 'مستخدم',
+        photoUrl: photoUrl || user.photoURL || 'https://www.gravatar.com/avatar/?d=mp',
         bio: bio.trim(),
+        email: user.email || '',
         customization: customizationData,
-        // Ensure old audio keys are cleanly wiped
-        songUrl: '',
-        songTitle: '',
-        songArtist: '',
-        clipStartTime: 0,
-        clipDuration: 0,
         updatedAt: serverTimestamp()
-      });
+      };
+
+      await setDoc(doc(db, 'users', user.uid), profilePayload, { merge: true });
 
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 4000);
     } catch (error) {
       console.error("Error updating profile:", error);
-      alert("حدث خطأ أثناء حفظ التعديلات.");
+      alert("حدث خطأ أثناء حفظ التعديلات. يرجى المحاولة مرة أخرى.");
     } finally {
       setIsSaving(false);
     }
