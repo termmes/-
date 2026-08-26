@@ -132,6 +132,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'catalog' | 'community' | 'profile' | 'outOfStock'>('catalog');
   
   // Product creation form state
+  const [isAddProductOpen, setIsAddProductOpen] = useState(false);
   const [newProductName, setNewProductName] = useState('');
   const [newProductImage, setNewProductImage] = useState('');
   const [newProductCategory, setNewProductCategory] = useState<string>('refrigerator');
@@ -343,6 +344,33 @@ export default function App() {
     try {
       await updateDoc(doc(db, 'products', productId), {
         imageUrl: newImageUrl
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `products/${productId}`);
+    }
+  };
+
+  const handleRenameProduct = async (productId: string, newName: string) => {
+    if (!newName.trim()) return;
+    try {
+      await updateDoc(doc(db, 'products', productId), {
+        name: newName.trim()
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `products/${productId}`);
+    }
+  };
+
+  const handleUpdateProductDetails = async (
+    productId: string, 
+    updates: { name: string; category: string; imageUrl: string; variations: Variation[] }
+  ) => {
+    try {
+      await updateDoc(doc(db, 'products', productId), {
+        name: updates.name.trim(),
+        category: updates.category,
+        imageUrl: updates.imageUrl,
+        variations: updates.variations
       });
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `products/${productId}`);
@@ -629,94 +657,122 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Add Product Form */}
-              <section className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-blue-100">
-                <h3 className="text-sm sm:text-base lg:text-lg font-bold text-gray-900 mb-3.5 flex items-center gap-2">
-                  <Plus className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" /> 
-                  <span>إضافة منتج جديد لقسم: <strong className="text-blue-600">{activePageConfig.title}</strong></span>
-                </h3>
-                
-                <form onSubmit={handleAddProduct} className="flex flex-col gap-3">
-                  <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
-                    
-                    {/* Product Name Input */}
-                    <div className="md:col-span-5">
-                      <input
-                        type="text"
-                        placeholder="اسم المنتج (مثال: بيبسي، شيبسي فلفل، إندومي فراخ)..."
-                        value={newProductName}
-                        onChange={(e) => setNewProductName(e.target.value)}
-                        className="w-full px-3.5 py-2.5 sm:py-3 bg-gray-50 border border-gray-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-xs sm:text-sm font-medium min-w-0"
-                        required
-                      />
+              {/* Add Product Collapsible Section */}
+              <section className="bg-white rounded-2xl shadow-sm border border-blue-100 overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setIsAddProductOpen(!isAddProductOpen)}
+                  className="w-full p-4 sm:p-5 flex items-center justify-between hover:bg-blue-50/50 transition-colors text-right"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 bg-blue-50 text-blue-600 rounded-xl">
+                      <Plus className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform duration-200 ${isAddProductOpen ? 'rotate-45 text-red-500' : ''}`} />
                     </div>
-
-                    {/* Category Selector */}
-                    <div className="md:col-span-3">
-                      <select
-                        value={newProductCategory}
-                        onChange={(e) => setNewProductCategory(e.target.value)}
-                        className="w-full px-3 py-2.5 sm:py-3 bg-gray-50 border border-gray-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none text-xs sm:text-sm font-bold text-gray-700 cursor-pointer"
-                      >
-                        <option value="refrigerator">❄️ الثلاجة</option>
-                        <option value="stands">🏷️ الستاندات</option>
-                        <option value="indomie">🍜 إندومي</option>
-                        <option value="cleaners">🧼 المناديل والمنظفات</option>
-                      </select>
-                    </div>
-
-                    {/* Image Upload Input */}
-                    <div className="md:col-span-4 relative flex items-center min-w-0">
-                      {newProductImage.startsWith('data:') ? (
-                        <div className="w-full flex items-center justify-between px-3 py-2.5 border border-blue-300 bg-blue-50 rounded-xl min-w-0">
-                          <span className="text-xs text-blue-700 font-bold truncate">تم اختيار الصورة ✓</span>
-                          <button 
-                            type="button" 
-                            onClick={() => {
-                              setNewProductImage('');
-                              if (fileInputRef.current) fileInputRef.current.value = '';
-                            }} 
-                            className="text-blue-500 hover:text-blue-700 p-1 shrink-0"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ) : (
-                        <>
-                          <input
-                            type="url"
-                            placeholder="رابط صورة (اختياري)"
-                            value={newProductImage}
-                            onChange={(e) => setNewProductImage(e.target.value)}
-                            className="w-full pl-10 pr-3 py-2.5 sm:py-3 bg-gray-50 border border-gray-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none text-xs sm:text-sm min-w-0"
-                          />
-                          <button 
-                            type="button" 
-                            onClick={() => fileInputRef.current?.click()}
-                            className="absolute left-1.5 p-2 text-gray-500 hover:text-blue-600 cursor-pointer bg-white border border-gray-200 rounded-lg transition-colors shrink-0 shadow-2xs min-h-[34px] min-w-[34px] flex items-center justify-center" 
-                            title="رفع صورة من الجهاز"
-                          >
-                            <ImagePlus className="w-4 h-4" />
-                          </button>
-                          <input 
-                            type="file" 
-                            accept="image/*" 
-                            className="hidden" 
-                            ref={fileInputRef}
-                            onChange={handleImageUpload} 
-                          />
-                        </>
-                      )}
+                    <div>
+                      <h3 className="text-sm sm:text-base font-bold text-gray-900 flex items-center gap-2">
+                        <span>إضافة منتج جديد لقسم: <strong className="text-blue-600">{activePageConfig.title}</strong></span>
+                      </h3>
+                      <p className="text-[11px] sm:text-xs text-gray-400 mt-0.5">
+                        {isAddProductOpen ? 'اضغط لغلق نافذة الإضافة' : 'اضغط لفتح نموذج إضافة منتج جديد'}
+                      </p>
                     </div>
                   </div>
+                  <span className={`text-xs font-bold px-3 py-1.5 rounded-xl border transition-all ${
+                    isAddProductOpen 
+                      ? 'bg-red-50 text-red-600 border-red-200' 
+                      : 'bg-blue-50 text-blue-700 border-blue-200'
+                  }`}>
+                    {isAddProductOpen ? 'إغلاق' : '+ إضافة منتج'}
+                  </span>
+                </button>
+                
+                {isAddProductOpen && (
+                  <div className="p-4 sm:p-6 pt-0 border-t border-blue-50">
+                    <form onSubmit={async (e) => {
+                      await handleAddProduct(e);
+                    }} className="flex flex-col gap-3 mt-4">
+                      <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+                        
+                        {/* Product Name Input */}
+                        <div className="md:col-span-5">
+                          <input
+                            type="text"
+                            placeholder="اسم المنتج (مثال: بيبسي، شيبسي فلفل، إندومي فراخ)..."
+                            value={newProductName}
+                            onChange={(e) => setNewProductName(e.target.value)}
+                            className="w-full px-3.5 py-2.5 sm:py-3 bg-gray-50 border border-gray-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-xs sm:text-sm font-medium min-w-0"
+                            required
+                          />
+                        </div>
 
-                  <button
-                    type="submit"
-                    className="w-full sm:w-auto self-end bg-blue-600 hover:bg-blue-700 text-white px-6 sm:px-8 py-2.5 sm:py-3 rounded-xl font-bold text-xs sm:text-sm transition-all shadow-sm active:scale-95 min-h-[44px]"
-                  >
-                    حفظ وإضافة المنتج
-                  </button>
-                </form>
+                        {/* Category Selector */}
+                        <div className="md:col-span-3">
+                          <select
+                            value={newProductCategory}
+                            onChange={(e) => setNewProductCategory(e.target.value)}
+                            className="w-full px-3 py-2.5 sm:py-3 bg-gray-50 border border-gray-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none text-xs sm:text-sm font-bold text-gray-700 cursor-pointer"
+                          >
+                            <option value="refrigerator">❄️ الثلاجة</option>
+                            <option value="stands">🏷️ الستاندات</option>
+                            <option value="indomie">🍜 إندومي</option>
+                            <option value="cleaners">🧼 المناديل والمنظفات</option>
+                          </select>
+                        </div>
+
+                        {/* Image Upload Input */}
+                        <div className="md:col-span-4 relative flex items-center min-w-0">
+                          {newProductImage.startsWith('data:') ? (
+                            <div className="w-full flex items-center justify-between px-3 py-2.5 border border-blue-300 bg-blue-50 rounded-xl min-w-0">
+                              <span className="text-xs text-blue-700 font-bold truncate">تم اختيار الصورة ✓</span>
+                              <button 
+                                type="button" 
+                                onClick={() => {
+                                  setNewProductImage('');
+                                  if (fileInputRef.current) fileInputRef.current.value = '';
+                                }} 
+                                className="text-blue-500 hover:text-blue-700 p-1 shrink-0"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ) : (
+                            <>
+                              <input
+                                type="url"
+                                placeholder="رابط صورة (اختياري)"
+                                value={newProductImage}
+                                onChange={(e) => setNewProductImage(e.target.value)}
+                                className="w-full pl-10 pr-3 py-2.5 sm:py-3 bg-gray-50 border border-gray-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none text-xs sm:text-sm min-w-0"
+                              />
+                              <button 
+                                type="button" 
+                                onClick={() => fileInputRef.current?.click()}
+                                className="absolute left-1.5 p-2 text-gray-500 hover:text-blue-600 cursor-pointer bg-white border border-gray-200 rounded-lg transition-colors shrink-0 shadow-2xs min-h-[34px] min-w-[34px] flex items-center justify-center" 
+                                title="رفع صورة من الجهاز"
+                              >
+                                <ImagePlus className="w-4 h-4" />
+                              </button>
+                              <input 
+                                type="file" 
+                                accept="image/*" 
+                                className="hidden" 
+                                ref={fileInputRef}
+                                onChange={handleImageUpload} 
+                              />
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      <button
+                        type="submit"
+                        className="w-full sm:w-auto self-end bg-blue-600 hover:bg-blue-700 text-white px-6 sm:px-8 py-2.5 sm:py-3 rounded-xl font-bold text-xs sm:text-sm transition-all shadow-sm active:scale-95 min-h-[44px]"
+                      >
+                        حفظ وإضافة المنتج
+                      </button>
+                    </form>
+                  </div>
+                )}
               </section>
 
               {/* Product Grid - Responsive on Mobile, Tablets, Desktops and 4K TVs */}
@@ -732,6 +788,8 @@ export default function App() {
                     onDeleteVariation={handleDeleteVariation}
                     onUpdateImage={handleUpdateProductImage}
                     onChangeCategory={handleChangeProductCategory}
+                    onUpdateProduct={handleUpdateProductDetails}
+                    onRenameProduct={handleRenameProduct}
                   />
                 ))}
                 

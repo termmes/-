@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Product, Variation } from '../types';
+import { ProductSettingsModal } from './ProductSettingsModal';
 import { 
   ImagePlus, 
   Trash2, 
@@ -10,12 +11,16 @@ import {
   LayoutGrid, 
   UtensilsCrossed, 
   Sparkles,
-  Package
+  Package,
+  Settings,
+  Edit2,
+  Check,
+  X
 } from 'lucide-react';
 
 const CATEGORY_NAMES: Record<string, { label: string, color: string, icon: React.ComponentType<{ className?: string }> }> = {
   refrigerator: { label: 'الثلاجة', color: 'bg-cyan-50 text-cyan-700 border-cyan-200', icon: Snowflake },
-  stands: { label: 'الستاندات', color: 'bg-amber-50 text-amber-700 border-amber-200', icon: LayoutGrid },
+  stands: { label: 'الستاندات', color: 'bg-amber-700/10 text-amber-800 border-amber-300', icon: LayoutGrid },
   indomie: { label: 'إندومي', color: 'bg-red-50 text-red-700 border-red-200', icon: UtensilsCrossed },
   cleaners: { label: 'المناديل والمنظفات', color: 'bg-indigo-50 text-indigo-700 border-indigo-200', icon: Sparkles },
 };
@@ -68,6 +73,8 @@ interface ProductCardProps {
   onDeleteVariation: (productId: string, variationId: string) => void;
   onUpdateImage: (productId: string, newImageUrl: string) => void;
   onChangeCategory?: (productId: string, newCategory: string) => void;
+  onUpdateProduct?: (productId: string, updates: { name: string; category: string; imageUrl: string; variations: Variation[] }) => Promise<void>;
+  onRenameProduct?: (productId: string, newName: string) => Promise<void>;
   isOwner: boolean;
 }
 
@@ -79,13 +86,17 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   onDeleteVariation,
   onUpdateImage,
   onChangeCategory,
+  onUpdateProduct,
+  onRenameProduct,
   isOwner
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [newVarNames, setNewVarNames] = useState<{ '5': string, '10': string, 'other': string }>({ '5': '', '10': '', 'other': '' });
-  const [expandedGroups, setExpandedGroups] = useState<{ '5': boolean, '10': boolean, 'other': boolean }>({ '5': true, '10': true, 'other': true });
+  const [expandedGroups, setExpandedGroups] = useState<{ '5': boolean, '10': boolean, 'other': boolean }>({ '5': false, '10': false, 'other': false });
   const [isUpdatingImage, setIsUpdatingImage] = useState(false);
-  const [isChangingCat, setIsChangingCat] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isInlineEditingName, setIsInlineEditingName] = useState(false);
+  const [inlineName, setInlineName] = useState(product.name);
 
   const handleImageEdit = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -103,11 +114,34 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     }
   };
 
+  const handleSaveInlineRename = async () => {
+    if (!inlineName.trim()) {
+      setInlineName(product.name);
+      setIsInlineEditingName(false);
+      return;
+    }
+
+    if (inlineName.trim() !== product.name) {
+      if (onRenameProduct) {
+        await onRenameProduct(product.id, inlineName.trim());
+      } else if (onUpdateProduct) {
+        await onUpdateProduct(product.id, {
+          name: inlineName.trim(),
+          category: product.category || 'stands',
+          imageUrl: product.imageUrl,
+          variations: product.variations || []
+        });
+      }
+    }
+    setIsInlineEditingName(false);
+  };
+
   const handleAdd = (e: React.FormEvent, group: '5' | '10' | 'other') => {
     e.preventDefault();
     if (!newVarNames[group].trim()) return;
     onAddVariation(product.id, newVarNames[group], group);
     setNewVarNames(prev => ({ ...prev, [group]: '' }));
+    setExpandedGroups(prev => ({ ...prev, [group]: true }));
   };
 
   const categoryMeta = product.category && CATEGORY_NAMES[product.category] 
@@ -244,12 +278,21 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         )}
 
         {isOwner && (
-          <div className="absolute top-3 right-3 flex gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all">
+          <div className="absolute top-3 right-3 flex gap-1.5 opacity-100 sm:opacity-90 sm:group-hover:opacity-100 transition-all">
+            <button 
+              type="button"
+              onClick={() => setIsSettingsOpen(true)}
+              className="p-2 sm:p-2.5 bg-white/95 hover:bg-blue-50 text-gray-700 hover:text-blue-600 rounded-xl cursor-pointer shadow-sm transition-colors min-h-[36px] min-w-[36px] flex items-center justify-center border border-gray-100" 
+              title="إعدادات وتعديل المنتج (الاسم، القسم، الصورة، الأصناف)"
+              disabled={isUpdatingImage}
+            >
+              <Settings className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
+            </button>
             <button 
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="p-2.5 bg-white/95 hover:bg-blue-50 text-gray-700 hover:text-blue-600 rounded-xl cursor-pointer shadow-sm transition-colors min-h-[40px] min-w-[40px] flex items-center justify-center" 
-              title="تغيير صورة المنتج"
+              className="p-2 sm:p-2.5 bg-white/95 hover:bg-blue-50 text-gray-700 hover:text-blue-600 rounded-xl cursor-pointer shadow-sm transition-colors min-h-[36px] min-w-[36px] flex items-center justify-center border border-gray-100" 
+              title="تغيير صورة المنتج سريعا"
               disabled={isUpdatingImage}
             >
               <ImagePlus className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -258,7 +301,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             <button 
               type="button" 
               onClick={() => onDeleteProduct(product.id)}
-              className="p-2.5 bg-white/95 hover:bg-red-50 text-gray-700 hover:text-red-600 rounded-xl shadow-sm transition-colors min-h-[40px] min-w-[40px] flex items-center justify-center"
+              className="p-2 sm:p-2.5 bg-white/95 hover:bg-red-50 text-gray-700 hover:text-red-600 rounded-xl shadow-sm transition-colors min-h-[36px] min-w-[36px] flex items-center justify-center border border-gray-100"
               title="حذف المنتج بالكامل"
               disabled={isUpdatingImage}
             >
@@ -271,12 +314,77 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       {/* Product Content */}
       <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between">
         <div className="mb-3.5 flex items-start justify-between gap-2">
-          <h3 className="text-base sm:text-lg lg:text-xl font-black text-gray-900 leading-tight">
-            {product.name}
-          </h3>
+          {/* Editable Product Title */}
+          {isInlineEditingName ? (
+            <div className="flex items-center gap-1.5 flex-1 min-w-0">
+              <input
+                type="text"
+                value={inlineName}
+                onChange={(e) => setInlineName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleSaveInlineRename();
+                  if (e.key === 'Escape') {
+                    setInlineName(product.name);
+                    setIsInlineEditingName(false);
+                  }
+                }}
+                autoFocus
+                className="w-full px-2.5 py-1.5 bg-blue-50/60 border-2 border-blue-500 rounded-xl text-sm sm:text-base font-black text-gray-900 outline-none"
+                placeholder="اسم المنتج الجديد..."
+              />
+              <button
+                type="button"
+                onClick={handleSaveInlineRename}
+                className="p-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-xs shrink-0"
+                title="تأكيد وحفظ الاسم"
+              >
+                <Check className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setInlineName(product.name);
+                  setIsInlineEditingName(false);
+                }}
+                className="p-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl shrink-0"
+                title="إلغاء"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 group/title flex-1 min-w-0">
+              <h3 className="text-base sm:text-lg lg:text-xl font-black text-gray-900 leading-tight truncate">
+                {product.name}
+              </h3>
+              {isOwner && (
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setInlineName(product.name);
+                      setIsInlineEditingName(true);
+                    }}
+                    className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                    title="تعديل اسم المنتج سريعاً"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsSettingsOpen(true)}
+                    className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                    title="فتح إعدادات المنتج"
+                  >
+                    <Settings className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Change Category Dropdown for Owner */}
-          {isOwner && onChangeCategory && (
+          {isOwner && onChangeCategory && !isInlineEditingName && (
             <div className="relative shrink-0">
               <select
                 value={product.category || 'stands'}
@@ -299,6 +407,23 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           {renderGroup('other', 'فئات أخرى / أحجام متنوعة', 'Other')}
         </div>
       </div>
+
+      {/* Product Settings & Full Edit Modal */}
+      {isSettingsOpen && (
+        <ProductSettingsModal
+          product={product}
+          isOpen={isSettingsOpen}
+          onClose={() => setIsSettingsOpen(false)}
+          onSave={async (productId, updates) => {
+            if (onUpdateProduct) {
+              await onUpdateProduct(productId, updates);
+            }
+          }}
+          onDeleteProduct={async (productId) => {
+            await onDeleteProduct(productId);
+          }}
+        />
+      )}
     </div>
   );
 };
