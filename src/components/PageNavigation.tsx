@@ -41,15 +41,6 @@ export const PAGES_CONFIG: PageInfo[] = [
     borderColor: 'border-amber-200'
   },
   {
-    id: 'needed',
-    title: 'المطلوب والنواقص',
-    subtitle: 'دفتر الملاحظات والنواقص اليومية',
-    icon: ClipboardList,
-    color: 'text-emerald-600',
-    bgColor: 'bg-emerald-50 hover:bg-emerald-100',
-    borderColor: 'border-emerald-200'
-  },
-  {
     id: 'indomie',
     title: 'إندومي',
     subtitle: 'جميع أنواع وأطعمة الإندومي',
@@ -66,6 +57,15 @@ export const PAGES_CONFIG: PageInfo[] = [
     color: 'text-indigo-600',
     bgColor: 'bg-indigo-50 hover:bg-indigo-100',
     borderColor: 'border-indigo-200'
+  },
+  {
+    id: 'needed',
+    title: 'المطلوب والنواقص',
+    subtitle: 'دفتر الملاحظات والنواقص اليومية',
+    icon: ClipboardList,
+    color: 'text-emerald-600',
+    bgColor: 'bg-emerald-50 hover:bg-emerald-100',
+    borderColor: 'border-emerald-200'
   },
   {
     id: 'all',

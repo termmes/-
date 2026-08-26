@@ -834,28 +834,10 @@ export default function App() {
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-200 flex items-center justify-around pb-[env(safe-area-inset-bottom,0.5rem)] z-50 shadow-lg">
         <button 
           onClick={() => setActiveTab('catalog')} 
-          className={`flex flex-col items-center p-2.5 ${activeTab === 'catalog' ? 'text-blue-600 font-bold' : 'text-gray-400 font-medium'}`}
+          className={`flex flex-col items-center p-2.5 ${activeTab === 'catalog' && currentPage !== 'needed' ? 'text-blue-600 font-bold' : 'text-gray-400 font-medium'}`}
         >
           <Library className="w-5 h-5" />
           <span className="text-[10px] mt-1">الأقسام</span>
-        </button>
-
-        <button 
-          onClick={() => {
-            setCurrentPage('needed');
-            setActiveTab('catalog');
-          }} 
-          className={`flex flex-col items-center p-2.5 relative ${currentPage === 'needed' && activeTab === 'catalog' ? 'text-emerald-600 font-bold' : 'text-gray-400 font-medium'}`}
-        >
-          <div className="relative">
-            <ClipboardList className="w-5 h-5" />
-            {remindersCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-emerald-600 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
-                {remindersCount}
-              </span>
-            )}
-          </div>
-          <span className="text-[10px] mt-1">المطلوب</span>
         </button>
 
         <button 
@@ -879,6 +861,25 @@ export default function App() {
         >
           <Users className="w-5 h-5" />
           <span className="text-[10px] mt-1">المستخدمين</span>
+        </button>
+
+        {/* المطلوب والنواقص - القائمة التي قبل الأخيرة */}
+        <button 
+          onClick={() => {
+            setCurrentPage('needed');
+            setActiveTab('catalog');
+          }} 
+          className={`flex flex-col items-center p-2.5 relative ${currentPage === 'needed' && activeTab === 'catalog' ? 'text-emerald-600 font-bold' : 'text-gray-400 font-medium'}`}
+        >
+          <div className="relative">
+            <ClipboardList className="w-5 h-5" />
+            {remindersCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-emerald-600 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                {remindersCount}
+              </span>
+            )}
+          </div>
+          <span className="text-[10px] mt-1">المطلوب</span>
         </button>
 
         <button 
