@@ -477,20 +477,20 @@ export default function App() {
       
       {/* Top Header */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-2xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2">
+        <div className="max-w-[2000px] mx-auto px-3 sm:px-6 lg:px-8 xl:px-12 h-16 sm:h-18 flex items-center justify-between gap-2 sm:gap-4">
           
           {/* Logo & Main Title */}
-          <div className="flex items-center gap-3 shrink-0">
-            <div className="w-9 h-9 bg-blue-600 text-white rounded-xl flex items-center justify-center shadow-xs">
-              <Library className="w-5 h-5" />
+          <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+            <div className="w-9 h-9 sm:w-11 sm:h-11 bg-blue-600 text-white rounded-xl sm:rounded-2xl flex items-center justify-center shadow-xs">
+              <Library className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
             <div className="flex flex-col">
-              <h1 className="text-base sm:text-lg font-black text-gray-900 leading-tight">مكتبه الهدى</h1>
-              <span className="text-[10px] text-gray-400 hidden sm:block">إدارة الأقسام والنواقص</span>
+              <h1 className="text-base sm:text-xl font-black text-gray-900 leading-tight">مكتبه الهدى</h1>
+              <span className="text-[10px] sm:text-xs text-gray-400 hidden sm:block">إدارة الأقسام والنواقص والطلبيات</span>
             </div>
           </div>
 
-          {/* Center/Prominent Page Switcher Menu (Click to open list on PC & Phone) */}
+          {/* Center/Prominent Page Switcher Menu (Click to open list on PC & Phone & TV) */}
           <div className="flex items-center gap-2">
             <PageNavigation 
               currentPage={currentPage} 
@@ -504,11 +504,11 @@ export default function App() {
           </div>
 
           {/* Right Header Controls */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3">
             {deferredPrompt && (
               <button
                 onClick={handleInstallClick}
-                className="flex items-center gap-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all border border-blue-200 shrink-0"
+                className="flex items-center gap-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all border border-blue-200 shrink-0 min-h-[38px]"
               >
                 <Download className="w-4 h-4" />
                 <span className="hidden sm:inline">تثبيت التطبيق</span>
@@ -517,29 +517,29 @@ export default function App() {
 
             <button 
               onClick={() => setActiveTab('profile')} 
-              className="hidden md:flex items-center gap-2 hover:bg-gray-100 p-1.5 rounded-xl transition-colors"
+              className="hidden md:flex items-center gap-2 hover:bg-gray-100 p-1.5 sm:p-2 rounded-xl transition-colors min-h-[40px]"
               title="الملف الشخصي"
             >
               <img 
                 src={profile?.photoUrl || user.photoURL || 'https://www.gravatar.com/avatar/?d=mp'} 
                 alt="Profile" 
-                className="w-8 h-8 rounded-full object-cover border border-gray-200" 
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full object-cover border border-gray-200" 
               />
-              <span className="text-xs font-bold text-gray-700 max-w-[100px] truncate">{profile?.displayName || user.displayName}</span>
+              <span className="text-xs sm:text-sm font-bold text-gray-700 max-w-[120px] truncate">{profile?.displayName || user.displayName}</span>
             </button>
 
             <button
               onClick={logOut}
-              className="hidden md:flex items-center gap-1.5 text-xs font-bold text-gray-500 hover:text-red-600 hover:bg-red-50 p-2 rounded-xl transition-colors"
+              className="hidden md:flex items-center gap-1.5 text-xs sm:text-sm font-bold text-gray-500 hover:text-red-600 hover:bg-red-50 p-2 sm:p-2.5 rounded-xl transition-colors min-h-[40px]"
               title="تسجيل الخروج"
             >
-              <LogOut className="w-4 h-4" />
+              <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
           </div>
         </div>
 
-        {/* Horizontal Quick-Scroll Pages Bar (Available on Desktop & Mobile for fast 1-click access) */}
-        <div className="bg-gray-50 border-t border-gray-100 px-4 sm:px-6 lg:px-8 py-2 overflow-x-auto no-scrollbar flex items-center gap-2">
+        {/* Horizontal Quick-Scroll Pages Bar (Available on Desktop, Phone & TV for 1-click access) */}
+        <div className="bg-gray-50/90 border-t border-gray-100 px-3 sm:px-6 lg:px-8 xl:px-12 py-2 overflow-x-auto no-scrollbar flex items-center gap-2">
           {PAGES_CONFIG.map((page) => {
             const Icon = page.icon;
             const isSelected = currentPage === page.id && activeTab === 'catalog';
@@ -553,15 +553,15 @@ export default function App() {
                   setCurrentPage(page.id);
                   setActiveTab('catalog');
                 }}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
+                className={`flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all shrink-0 min-h-[38px] ${
                   isSelected
-                    ? 'bg-blue-600 text-white shadow-xs scale-102'
-                    : 'bg-white text-gray-700 border border-gray-200/80 hover:bg-gray-100'
+                    ? 'bg-blue-600 text-white shadow-xs scale-102 ring-2 ring-blue-400/30'
+                    : 'bg-white text-gray-700 border border-gray-200/90 hover:bg-gray-100'
                 }`}
               >
-                <Icon className={`w-3.5 h-3.5 ${isSelected ? 'text-white' : page.color}`} />
+                <Icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isSelected ? 'text-white' : page.color}`} />
                 <span>{page.title}</span>
-                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-extrabold ${
+                <span className={`text-[10px] sm:text-xs px-1.5 py-0.2 rounded-full font-extrabold ${
                   isSelected ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'
                 }`}>
                   {count}
@@ -572,8 +572,8 @@ export default function App() {
         </div>
       </header>
 
-      {/* Main Container */}
-      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 pb-28 md:pb-10">
+      {/* Main Container - Fully Fluid & Ultra-Wide TV Ready */}
+      <main className="flex-1 max-w-[2000px] mx-auto w-full px-3 sm:px-6 lg:px-8 xl:px-12 py-4 sm:py-6 pb-28 md:pb-12">
         
         {/* VIEW 1: NEEDED & REQUIRED NOTEBOOK PAGE (المطلوب والنواقص وإعادة الطلب) */}
         {currentPage === 'needed' && activeTab === 'catalog' && (
@@ -586,44 +586,44 @@ export default function App() {
 
         {/* VIEW 2: PRODUCT CATALOG PAGES (الثلاجة / الستاندات / إندومي / المنظفات / الكل) */}
         {currentPage !== 'needed' && (activeTab === 'catalog' || activeTab === 'outOfStock') && (
-          <div className="flex flex-col lg:flex-row gap-8">
+          <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">
             
             {/* Left Column: Product Sections & Add Form */}
-            <div className={`flex-1 space-y-6 ${activeTab === 'catalog' ? 'block' : 'hidden lg:block'}`}>
+            <div className={`flex-1 w-full space-y-6 ${activeTab === 'catalog' ? 'block' : 'hidden lg:block'}`}>
               
               {/* Active Page Header Banner & Search */}
               <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-200/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className={`p-3 rounded-2xl ${activePageConfig.bgColor} ${activePageConfig.color} shrink-0`}>
-                    <ActivePageIcon className="w-6 h-6 sm:w-7 sm:h-7" />
+                <div className="flex items-center gap-3.5">
+                  <div className={`p-3 sm:p-3.5 rounded-2xl ${activePageConfig.bgColor} ${activePageConfig.color} shrink-0`}>
+                    <ActivePageIcon className="w-6 h-6 sm:w-8 sm:h-8" />
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <h2 className="text-lg sm:text-xl font-extrabold text-gray-900">{activePageConfig.title}</h2>
-                      <span className="text-xs bg-gray-100 text-gray-700 font-bold px-2 py-0.5 rounded-full">
+                      <h2 className="text-lg sm:text-2xl font-black text-gray-900">{activePageConfig.title}</h2>
+                      <span className="text-xs sm:text-sm bg-gray-100 text-gray-700 font-bold px-2.5 py-0.5 rounded-full">
                         {displayedProducts.length} منتج
                       </span>
                     </div>
-                    <p className="text-xs text-gray-500 mt-0.5">{activePageConfig.subtitle}</p>
+                    <p className="text-xs sm:text-sm text-gray-500 mt-0.5">{activePageConfig.subtitle}</p>
                   </div>
                 </div>
 
                 {/* Quick Search */}
-                <div className="relative w-full sm:w-64">
+                <div className="relative w-full sm:w-72 lg:w-80">
                   <input
                     type="text"
                     placeholder="بحث في المنتجات والأطعمة..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-8 pr-9 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                    className="w-full pl-8 pr-10 py-2.5 text-xs sm:text-sm bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                   />
-                  <Search className="w-4 h-4 text-gray-400 absolute right-3 top-2.5" />
+                  <Search className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 absolute right-3 top-3" />
                   {searchQuery && (
                     <button 
                       onClick={() => setSearchQuery('')}
-                      className="absolute left-2.5 top-2.5 text-gray-400 hover:text-gray-600"
+                      className="absolute left-2.5 top-2.5 text-gray-400 hover:text-gray-600 p-1"
                     >
-                      <X className="w-3.5 h-3.5" />
+                      <X className="w-4 h-4" />
                     </button>
                   )}
                 </div>
@@ -631,32 +631,32 @@ export default function App() {
 
               {/* Add Product Form */}
               <section className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-blue-100">
-                <h3 className="text-sm sm:text-base font-bold text-gray-900 mb-3.5 flex items-center gap-2">
-                  <Plus className="w-4 h-4 text-blue-600" /> 
+                <h3 className="text-sm sm:text-base lg:text-lg font-bold text-gray-900 mb-3.5 flex items-center gap-2">
+                  <Plus className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" /> 
                   <span>إضافة منتج جديد لقسم: <strong className="text-blue-600">{activePageConfig.title}</strong></span>
                 </h3>
                 
                 <form onSubmit={handleAddProduct} className="flex flex-col gap-3">
-                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
                     
                     {/* Product Name Input */}
-                    <div className="sm:col-span-5">
+                    <div className="md:col-span-5">
                       <input
                         type="text"
                         placeholder="اسم المنتج (مثال: بيبسي، شيبسي فلفل، إندومي فراخ)..."
                         value={newProductName}
                         onChange={(e) => setNewProductName(e.target.value)}
-                        className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-xs sm:text-sm font-medium min-w-0"
+                        className="w-full px-3.5 py-2.5 sm:py-3 bg-gray-50 border border-gray-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-xs sm:text-sm font-medium min-w-0"
                         required
                       />
                     </div>
 
                     {/* Category Selector */}
-                    <div className="sm:col-span-3">
+                    <div className="md:col-span-3">
                       <select
                         value={newProductCategory}
                         onChange={(e) => setNewProductCategory(e.target.value)}
-                        className="w-full px-3 py-2.5 bg-gray-50 border border-gray-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none text-xs sm:text-sm font-bold text-gray-700 cursor-pointer"
+                        className="w-full px-3 py-2.5 sm:py-3 bg-gray-50 border border-gray-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none text-xs sm:text-sm font-bold text-gray-700 cursor-pointer"
                       >
                         <option value="refrigerator">❄️ الثلاجة</option>
                         <option value="stands">🏷️ الستاندات</option>
@@ -666,9 +666,9 @@ export default function App() {
                     </div>
 
                     {/* Image Upload Input */}
-                    <div className="sm:col-span-4 relative flex items-center min-w-0">
+                    <div className="md:col-span-4 relative flex items-center min-w-0">
                       {newProductImage.startsWith('data:') ? (
-                        <div className="w-full flex items-center justify-between px-3 py-2 border border-blue-300 bg-blue-50 rounded-xl min-w-0">
+                        <div className="w-full flex items-center justify-between px-3 py-2.5 border border-blue-300 bg-blue-50 rounded-xl min-w-0">
                           <span className="text-xs text-blue-700 font-bold truncate">تم اختيار الصورة ✓</span>
                           <button 
                             type="button" 
@@ -688,12 +688,12 @@ export default function App() {
                             placeholder="رابط صورة (اختياري)"
                             value={newProductImage}
                             onChange={(e) => setNewProductImage(e.target.value)}
-                            className="w-full pl-10 pr-3 py-2.5 bg-gray-50 border border-gray-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none text-xs min-w-0"
+                            className="w-full pl-10 pr-3 py-2.5 sm:py-3 bg-gray-50 border border-gray-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none text-xs sm:text-sm min-w-0"
                           />
                           <button 
                             type="button" 
                             onClick={() => fileInputRef.current?.click()}
-                            className="absolute left-1.5 p-1.5 text-gray-500 hover:text-blue-600 cursor-pointer bg-white border border-gray-200 rounded-lg transition-colors shrink-0 shadow-2xs" 
+                            className="absolute left-1.5 p-2 text-gray-500 hover:text-blue-600 cursor-pointer bg-white border border-gray-200 rounded-lg transition-colors shrink-0 shadow-2xs min-h-[34px] min-w-[34px] flex items-center justify-center" 
                             title="رفع صورة من الجهاز"
                           >
                             <ImagePlus className="w-4 h-4" />
@@ -712,15 +712,15 @@ export default function App() {
 
                   <button
                     type="submit"
-                    className="w-full sm:w-auto self-end bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all shadow-sm active:scale-95"
+                    className="w-full sm:w-auto self-end bg-blue-600 hover:bg-blue-700 text-white px-6 sm:px-8 py-2.5 sm:py-3 rounded-xl font-bold text-xs sm:text-sm transition-all shadow-sm active:scale-95 min-h-[44px]"
                   >
                     حفظ وإضافة المنتج
                   </button>
                 </form>
               </section>
 
-              {/* Product Grid */}
-              <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              {/* Product Grid - Responsive on Mobile, Tablets, Desktops and 4K TVs */}
+              <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-6">
                 {displayedProducts.map(product => (
                   <ProductCard 
                     key={product.id} 
@@ -738,8 +738,8 @@ export default function App() {
                 {displayedProducts.length === 0 && (
                   <div className="col-span-full py-16 text-center text-gray-500 bg-white rounded-2xl border border-dashed border-gray-300 p-6">
                     <ActivePageIcon className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                    <h4 className="text-base font-bold text-gray-700">لا توجد منتجات في صفحة "{activePageConfig.title}"</h4>
-                    <p className="text-xs text-gray-400 mt-1 max-w-sm mx-auto">
+                    <h4 className="text-base sm:text-lg font-bold text-gray-700">لا توجد منتجات في صفحة "{activePageConfig.title}"</h4>
+                    <p className="text-xs sm:text-sm text-gray-400 mt-1 max-w-sm mx-auto">
                       أضف منتجك الأول من النموذج أعلاه أو اختر قسماً آخر من القائمة في الأعلى.
                     </p>
                   </div>
@@ -748,43 +748,43 @@ export default function App() {
             </div>
 
             {/* Right Column: Out of Stock List / Shortages */}
-            <div className={`w-full lg:w-96 shrink-0 ${activeTab === 'outOfStock' ? 'block' : 'hidden lg:block'}`}>
+            <div className={`w-full lg:w-80 xl:w-96 2xl:w-[420px] shrink-0 ${activeTab === 'outOfStock' ? 'block' : 'hidden lg:block'}`}>
               <div className="bg-white rounded-2xl shadow-sm border border-red-100 overflow-hidden sticky top-24">
-                <div className="bg-gradient-to-r from-red-600 to-rose-600 p-4 text-white flex items-center justify-between">
+                <div className="bg-gradient-to-r from-red-600 to-rose-600 p-4 sm:p-5 text-white flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <AlertCircle className="w-5 h-5" />
-                    <h3 className="text-sm sm:text-base font-extrabold">قائمة النواقص (Out of Stock)</h3>
+                    <AlertCircle className="w-5 h-5 sm:w-6 sm:h-6" />
+                    <h3 className="text-sm sm:text-base lg:text-lg font-extrabold">قائمة النواقص (Out of Stock)</h3>
                   </div>
-                  <span className="bg-white/20 text-white text-xs font-black px-2.5 py-0.5 rounded-full">
+                  <span className="bg-white/20 text-white text-xs sm:text-sm font-black px-2.5 py-0.5 rounded-full">
                     {outOfStockItems.length} صنف
                   </span>
                 </div>
                 
-                <div className="p-4 space-y-4">
+                <div className="p-4 sm:p-5 space-y-4">
                   {outOfStockItems.length > 0 ? (
                     <>
                       <textarea
                         readOnly
                         value={outOfStockItems.map((item, i) => `${i + 1}. ${item}`).join('\n')}
-                        className="w-full h-64 p-3 bg-gray-50 border border-gray-200 rounded-xl text-xs sm:text-sm text-gray-800 font-medium leading-relaxed resize-none focus:outline-none"
+                        className="w-full h-64 sm:h-80 p-3.5 bg-gray-50 border border-gray-200 rounded-xl text-xs sm:text-sm text-gray-800 font-medium leading-relaxed resize-none focus:outline-none"
                       />
                       
-                      <div className="flex flex-col gap-2">
+                      <div className="flex flex-col gap-2.5">
                         <button
                           type="button"
                           onClick={() => {
                             setCurrentPage('needed');
                             setActiveTab('catalog');
                           }}
-                          className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all active:scale-95 shadow-xs"
+                          className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-3 rounded-xl font-bold text-xs sm:text-sm transition-all active:scale-95 shadow-xs min-h-[44px]"
                         >
-                          <ClipboardList className="w-4 h-4" />
+                          <ClipboardList className="w-4 h-4 sm:w-5 sm:h-5" />
                           فتح صفحة النواقص وإعادة الطلب
                         </button>
 
                         <button
                           onClick={handleCopy}
-                          className="w-full flex items-center justify-center gap-2 bg-gray-900 hover:bg-gray-800 text-white px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all active:scale-95 shadow-xs"
+                          className="w-full flex items-center justify-center gap-2 bg-gray-900 hover:bg-gray-800 text-white px-4 py-3 rounded-xl font-bold text-xs sm:text-sm transition-all active:scale-95 shadow-xs min-h-[44px]"
                         >
                           {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
                           {copied ? 'تم نسخ النواقص للحافظة!' : 'نسخ قائمة النواقص'}
@@ -793,7 +793,7 @@ export default function App() {
                         <button
                           onClick={handleClearOutOfStock}
                           disabled={isClearing}
-                          className="w-full flex items-center justify-center gap-2 bg-red-50 hover:bg-red-100 text-red-700 disabled:opacity-50 px-4 py-2 rounded-xl font-bold text-xs transition-colors border border-red-200"
+                          className="w-full flex items-center justify-center gap-2 bg-red-50 hover:bg-red-100 text-red-700 disabled:opacity-50 px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-colors border border-red-200 min-h-[42px]"
                         >
                           <ListX className="w-4 h-4" />
                           {isClearing ? 'جاري التصفير...' : 'تصفير كل النواقص (متوفر للجميع)'}
@@ -802,11 +802,11 @@ export default function App() {
                     </>
                   ) : (
                     <div className="text-center py-12 text-gray-500">
-                      <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-2">
-                        <Check className="w-6 h-6" />
+                      <div className="w-12 h-12 sm:w-14 sm:h-14 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-2.5">
+                        <Check className="w-6 h-6 sm:w-7 sm:h-7" />
                       </div>
-                      <p className="text-sm font-bold text-gray-700">جميع الأصناف متوفرة بالمحل</p>
-                      <p className="text-xs text-gray-400 mt-1">عند تحويل أي صنف إلى "ناقص" سيظهر هنا فوراً.</p>
+                      <p className="text-sm sm:text-base font-bold text-gray-700">جميع الأصناف متوفرة بالمحل</p>
+                      <p className="text-xs sm:text-sm text-gray-400 mt-1">عند تحويل أي صنف إلى "ناقص" سيظهر هنا فوراً.</p>
                     </div>
                   )}
                 </div>

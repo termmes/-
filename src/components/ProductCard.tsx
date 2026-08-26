@@ -143,27 +143,27 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         
         {isExpanded && (
           <div className="p-2.5 sm:p-3 pt-0 border-t border-gray-100/60 mt-1">
-            <div className="space-y-1.5 mb-2.5 mt-2">
+            <div className="space-y-2 mb-2.5 mt-2">
               {groupVars.map(variation => (
                 <div 
                   key={variation.id} 
                   id={`var-${variation.id}`}
-                  className={`flex flex-col sm:flex-row sm:items-center justify-between p-2 sm:p-2.5 gap-2 rounded-lg border transition-all ${
+                  className={`flex flex-col sm:flex-row sm:items-center justify-between p-2.5 sm:p-3 gap-2 rounded-xl border transition-all ${
                     variation.isOutOfStock 
                       ? 'bg-red-50/90 border-red-200' 
-                      : 'bg-white border-gray-200 shadow-2xs'
+                      : 'bg-white border-gray-200 shadow-2xs hover:border-gray-300'
                   }`}
                 >
-                  <span className={`text-xs sm:text-sm leading-snug break-words min-w-0 font-medium ${
-                    variation.isOutOfStock ? 'text-red-700 font-semibold' : 'text-gray-700'
+                  <span className={`text-xs sm:text-sm lg:text-base leading-snug break-words min-w-0 font-bold ${
+                    variation.isOutOfStock ? 'text-red-700' : 'text-gray-800'
                   }`}>
                     {variation.name}
                   </span>
-                  <div className="flex items-center justify-end gap-1.5 shrink-0">
+                  <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0 pt-1 sm:pt-0 border-t sm:border-t-0 border-gray-100">
                     <button
                       type="button"
                       onClick={() => onToggleStock(product.id, variation.id)}
-                      className={`text-xs px-2.5 py-1.5 sm:px-3 sm:py-1 rounded-md font-bold transition-all shadow-2xs active:scale-95 ${
+                      className={`text-xs sm:text-sm px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg font-black transition-all shadow-2xs active:scale-95 min-h-[38px] flex items-center justify-center ${
                         variation.isOutOfStock 
                           ? 'bg-red-600 text-white hover:bg-red-700' 
                           : 'bg-emerald-50 border border-emerald-300 text-emerald-700 hover:bg-emerald-100'
@@ -176,33 +176,33 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                       <button
                         type="button"
                         onClick={() => onDeleteVariation(product.id, variation.id)}
-                        className="text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors p-1.5 rounded-md"
+                        className="text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors p-2 rounded-lg min-h-[38px] min-w-[38px] flex items-center justify-center"
                         title="حذف هذا الصنف"
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     )}
                   </div>
                 </div>
               ))}
               {groupVars.length === 0 && (
-                <p className="text-[11px] text-gray-400 italic text-center py-2 bg-white rounded-lg border border-dashed border-gray-200">
+                <p className="text-xs text-gray-400 italic text-center py-2.5 bg-white rounded-xl border border-dashed border-gray-200">
                   لا توجد أطعمة أو أصناف مضافة
                 </p>
               )}
             </div>
-            <form onSubmit={(e) => handleAdd(e, groupId)} className="flex gap-1.5">
+            <form onSubmit={(e) => handleAdd(e, groupId)} className="flex gap-2">
               <input
                 type="text"
                 placeholder={`إضافة صنف لـ ${title}...`}
                 value={newVarNames[groupId]}
                 onChange={(e) => setNewVarNames(prev => ({ ...prev, [groupId]: e.target.value }))}
-                className="flex-1 px-3 py-1.5 text-xs sm:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white min-w-0"
+                className="flex-1 px-3.5 py-2 text-xs sm:text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white min-w-0 min-h-[40px]"
               />
               <button
                 type="submit"
                 disabled={!newVarNames[groupId].trim()}
-                className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-200 text-white px-3 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all shadow-xs shrink-0 active:scale-95"
+                className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-200 text-white px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all shadow-xs shrink-0 active:scale-95 min-h-[40px]"
               >
                 إضافة
               </button>
@@ -216,10 +216,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   return (
     <div 
       id={`product-card-${product.id}`}
-      className="bg-white rounded-2xl shadow-sm border border-gray-200/90 overflow-hidden flex flex-col transition-all hover:shadow-md"
+      className="bg-white rounded-2xl shadow-sm border border-gray-200/90 overflow-hidden flex flex-col transition-all hover:shadow-md h-full"
     >
       {/* Product Image & Badges */}
-      <div className="relative h-44 sm:h-48 bg-gray-100 group">
+      <div className="relative h-48 sm:h-52 md:h-56 lg:h-52 xl:h-56 2xl:h-64 bg-gray-100 group">
         <img 
           src={product.imageUrl} 
           alt={product.name} 
@@ -230,48 +230,48 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         />
 
         {/* Category Pill Tag */}
-        <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
-          <span className={`flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full border shadow-2xs backdrop-blur-xs ${categoryMeta.color}`}>
-            <CategoryIcon className="w-3 h-3" />
+        <div className="absolute top-3 left-3 flex items-center gap-1.5">
+          <span className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full border shadow-xs backdrop-blur-xs ${categoryMeta.color}`}>
+            <CategoryIcon className="w-3.5 h-3.5" />
             {categoryMeta.label}
           </span>
         </div>
 
         {isUpdatingImage && (
-          <div className="absolute inset-0 bg-white/70 flex items-center justify-center backdrop-blur-xs">
-            <span className="text-xs font-bold text-gray-800 bg-white px-3 py-1.5 rounded-full shadow-sm">جاري تحديث الصورة...</span>
+          <div className="absolute inset-0 bg-white/80 flex items-center justify-center backdrop-blur-xs">
+            <span className="text-xs font-bold text-gray-800 bg-white px-4 py-2 rounded-full shadow-sm">جاري تحديث الصورة...</span>
           </div>
         )}
 
         {isOwner && (
-          <div className="absolute top-2.5 right-2.5 flex gap-1.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all">
+          <div className="absolute top-3 right-3 flex gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all">
             <button 
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="p-2 bg-white/95 hover:bg-blue-50 text-gray-700 hover:text-blue-600 rounded-xl cursor-pointer shadow-sm transition-colors" 
+              className="p-2.5 bg-white/95 hover:bg-blue-50 text-gray-700 hover:text-blue-600 rounded-xl cursor-pointer shadow-sm transition-colors min-h-[40px] min-w-[40px] flex items-center justify-center" 
               title="تغيير صورة المنتج"
               disabled={isUpdatingImage}
             >
-              <ImagePlus className="w-4 h-4" />
+              <ImagePlus className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
             <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleImageEdit} disabled={isUpdatingImage} />
             <button 
-              type="button"
+              type="button" 
               onClick={() => onDeleteProduct(product.id)}
-              className="p-2 bg-white/95 hover:bg-red-50 text-gray-700 hover:text-red-600 rounded-xl shadow-sm transition-colors"
+              className="p-2.5 bg-white/95 hover:bg-red-50 text-gray-700 hover:text-red-600 rounded-xl shadow-sm transition-colors min-h-[40px] min-w-[40px] flex items-center justify-center"
               title="حذف المنتج بالكامل"
               disabled={isUpdatingImage}
             >
-              <Trash2 className="w-4 h-4" />
+              <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
           </div>
         )}
       </div>
       
       {/* Product Content */}
-      <div className="p-3.5 sm:p-4 flex-1 flex flex-col justify-between">
-        <div className="mb-3 flex items-start justify-between gap-2">
-          <h3 className="text-base sm:text-lg font-extrabold text-gray-900 leading-tight">
+      <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between">
+        <div className="mb-3.5 flex items-start justify-between gap-2">
+          <h3 className="text-base sm:text-lg lg:text-xl font-black text-gray-900 leading-tight">
             {product.name}
           </h3>
 
@@ -281,7 +281,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               <select
                 value={product.category || 'stands'}
                 onChange={(e) => onChangeCategory(product.id, e.target.value)}
-                className="text-[11px] font-semibold bg-gray-50 border border-gray-200 rounded-lg px-2 py-1 text-gray-600 hover:bg-gray-100 outline-none cursor-pointer"
+                className="text-xs font-bold bg-gray-50 border border-gray-200 rounded-xl px-2.5 py-1.5 text-gray-600 hover:bg-gray-100 outline-none cursor-pointer"
                 title="تغيير القسم / الصفحة"
               >
                 <option value="refrigerator">❄️ الثلاجة</option>
@@ -293,7 +293,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           )}
         </div>
         
-        <div className="flex-1 flex flex-col gap-1.5">
+        <div className="flex-1 flex flex-col gap-2">
           {renderGroup('5', 'فئة 5 جنيه', 'Price: 5')}
           {renderGroup('10', 'فئة 10 جنيه', 'Price: 10')}
           {renderGroup('other', 'فئات أخرى / أحجام متنوعة', 'Other')}
