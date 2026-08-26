@@ -7,7 +7,6 @@
     scroll-behavior: smooth;
   }
 
-  /* TV / Keyboard focus ring optimization */
   *:focus-visible {
     outline: 2px solid #2563eb;
     outline-offset: 2px;
@@ -33,7 +32,6 @@
   background: #94a3b8;
 }
 
-/* Utility to hide scrollbar while allowing scrolling */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
@@ -42,7 +40,6 @@
   scrollbar-width: none;
 }
 
-/* Safe area padding helper classes */
 .pb-safe {
   padding-bottom: env(safe-area-inset-bottom, 1rem);
 }
@@ -50,21 +47,110 @@
   padding-top: env(safe-area-inset-top, 0rem);
 }
 
-/* Smart TV / 4K / Ultra-wide media rules */
+/* --- Keyframe Animations for Profile Themes & Avatar Rings --- */
+
+@keyframes spinSlow {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.animate-spin-slow {
+  animation: spinSlow 5s linear infinite;
+}
+
+@keyframes floatStar {
+  0%, 100% { transform: translateY(0) scale(1); opacity: 0.3; }
+  50% { transform: translateY(-8px) scale(1.3); opacity: 1; }
+}
+
+.animate-float-star {
+  animation: floatStar 3s ease-in-out infinite;
+}
+
+@keyframes riseSpark {
+  0% { transform: translateY(100%) scale(0.6); opacity: 0; }
+  30% { opacity: 1; }
+  100% { transform: translateY(-120%) scale(1.2); opacity: 0; }
+}
+
+.animate-rise-spark {
+  animation: riseSpark 3.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes cyberGridMove {
+  0% { background-position: 0 0; }
+  100% { background-position: 0 40px; }
+}
+
+.animate-cyber-grid {
+  background-size: 40px 40px;
+  background-image: 
+    linear-gradient(to right, rgba(6, 182, 212, 0.2) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(6, 182, 212, 0.2) 1px, transparent 1px);
+  animation: cyberGridMove 2s linear infinite;
+}
+
+.animate-synthwave-grid {
+  background-size: 40px 40px;
+  background-image: 
+    linear-gradient(to right, rgba(217, 70, 239, 0.25) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(217, 70, 239, 0.25) 1px, transparent 1px);
+  animation: cyberGridMove 3s linear infinite;
+}
+
+@keyframes matrixRainFall {
+  0% { transform: translateY(-100%); opacity: 0; }
+  20% { opacity: 1; }
+  80% { opacity: 0.9; }
+  100% { transform: translateY(100%); opacity: 0; }
+}
+
+.animate-matrix-stream {
+  animation: matrixRainFall 2.5s linear infinite;
+}
+
+@keyframes sakuraFall {
+  0% { transform: translateY(-20px) rotate(0deg) translateX(0); opacity: 0; }
+  20% { opacity: 0.9; }
+  80% { opacity: 0.8; }
+  100% { transform: translateY(160px) rotate(360deg) translateX(30px); opacity: 0; }
+}
+
+.animate-sakura-petal {
+  animation: sakuraFall 5s ease-in-out infinite;
+}
+
+@keyframes auroraWave {
+  0%, 100% { transform: scale(1) translateX(0); opacity: 0.4; }
+  50% { transform: scale(1.2) translateX(20px); opacity: 0.75; }
+}
+
+.animate-aurora-glow {
+  animation: auroraWave 6s ease-in-out infinite;
+}
+
+@keyframes floatBubble {
+  0% { transform: translateY(100%) scale(0.8); opacity: 0; }
+  30% { opacity: 0.8; }
+  100% { transform: translateY(-100%) scale(1.1); opacity: 0; }
+}
+
+.animate-neon-bubble {
+  animation: floatBubble 4s ease-in-out infinite;
+}
+
+/* Hexagon Clip Path */
+.clip-hexagon {
+  clip-path: polygon(50% 0%, 95% 25%, 95% 75%, 50% 100%, 5% 75%, 5% 25%);
+}
+
+.clip-shield {
+  clip-path: polygon(0 0, 100% 0, 100% 70%, 50% 100%, 0 70%);
+}
+
+/* TV / 4K optimization */
 @media (min-width: 1920px) {
   :root {
     font-size: 17px;
-  }
-}
-
-@media (min-width: 2560px) {
-  :root {
-    font-size: 19px;
-  }
-}
-
-@media (min-width: 3840px) {
-  :root {
-    font-size: 24px;
   }
 }

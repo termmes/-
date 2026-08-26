@@ -26,25 +26,25 @@ export interface ReminderItem {
   createdAt: any;
 }
 
+export interface ProfileCustomization {
+  bannerTheme: string;       // id of theme or 'custom'
+  bannerCustomUrl?: string;  // custom image url
+  avatarFrame: string;       // id of frame (e.g. 'rainbow-chroma', 'neon-cyan', 'fire-flame', etc.)
+  avatarShape: 'circle' | 'squircle' | 'hexagon' | 'diamond' | 'shield';
+  cardTheme: string;         // 'glass' | 'cyber-dark' | 'hologram' | 'gold-luxury' | 'matte-black' | 'synthwave'
+  animatedEffect: 'none' | 'stars' | 'sparks' | 'cyber-grid' | 'matrix' | 'sakura' | 'aurora' | 'bubbles';
+  badgeTitle?: string;       // custom badge title
+  badgeIcon?: string;        // emoji or icon name
+  badgeColor?: string;       // tailwind / hex color
+  fontStyle?: 'default' | 'gaming' | 'modern' | 'luxury';
+}
+
 export interface UserProfile {
   uid: string;
   displayName: string;
   photoUrl: string;
   bio?: string;
-  songUrl?: string;
-  songTitle?: string;
-  songArtist?: string;
   role?: 'admin' | 'member' | 'user';
+  customization?: ProfileCustomization;
   updatedAt: any;
-}
-
-export interface Story {
-  id: string;
-  userId: string;
-  authorName: string;
-  authorPhoto?: string;
-  mediaUrl?: string;
-  caption?: string;
-  bgColor?: string;
-  createdAt: any;
 }
