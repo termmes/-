@@ -44,15 +44,35 @@
     },
     "UserProfile": {
       "title": "User Profile",
-      "description": "Public profile for a user.",
+      "description": "Public profile for a user with Instagram-like features.",
       "type": "object",
       "properties": {
         "uid": { "type": "string" },
         "displayName": { "type": "string" },
         "photoUrl": { "type": "string" },
+        "bio": { "type": "string" },
+        "songUrl": { "type": "string" },
+        "songTitle": { "type": "string" },
+        "songArtist": { "type": "string" },
+        "role": { "type": "string" },
         "updatedAt": { "type": "string", "format": "date-time" }
       },
       "required": ["uid", "displayName", "photoUrl", "updatedAt"]
+    },
+    "Story": {
+      "title": "User Story",
+      "description": "Instagram-style story for user profile and community.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "authorPhoto": { "type": "string" },
+        "mediaUrl": { "type": "string" },
+        "caption": { "type": "string" },
+        "bgColor": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "authorName", "createdAt"]
     }
   },
   "firestore": {
@@ -67,6 +87,10 @@
     "users/{userId}": {
       "schema": { "$ref": "#/entities/UserProfile" },
       "description": "User profiles."
+    },
+    "stories/{storyId}": {
+      "schema": { "$ref": "#/entities/Story" },
+      "description": "User stories for community."
     }
   }
 }

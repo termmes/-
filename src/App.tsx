@@ -41,6 +41,8 @@ import {
 import { PageNavigation, PAGES_CONFIG } from './components/PageNavigation';
 import { NeededAndRequiredView } from './components/NeededAndRequiredView';
 import { ProductCard } from './components/ProductCard';
+import { CommunityView } from './components/CommunityView';
+import { ProfileView } from './components/ProfileView';
 
 enum OperationType {
   CREATE = 'create',
@@ -874,7 +876,13 @@ export default function App() {
         )}
 
         {/* VIEW 3: COMMUNITY */}
-        {activeTab === 'community' && <CommunityView />}
+        {activeTab === 'community' && (
+          <CommunityView 
+            currentUserId={user.uid} 
+            currentUserProfile={profile} 
+            products={products} 
+          />
+        )}
         
         {/* VIEW 4: PROFILE */}
         {activeTab === 'profile' && (
@@ -948,162 +956,6 @@ export default function App() {
           <span className="text-[10px] mt-1">حسابي</span>
         </button>
       </nav>
-    </div>
-  );
-}
-
-function CommunityView() {
-  const [users, setUsers] = useState<UserProfile[]>([]);
-  
-  useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, 'users'), (snapshot) => {
-      setUsers(snapshot.docs.map(d => d.data() as UserProfile));
-    }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'users');
-    });
-    return () => unsubscribe();
-  }, []);
-
-  return (
-    <div className="max-w-5xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold flex items-center gap-2 text-gray-900">
-          <Users className="w-6 h-6 text-blue-600" /> أعضاء ومستخدمي النظام
-        </h2>
-        <span className="text-xs bg-blue-50 text-blue-700 px-3 py-1 rounded-full font-bold">
-          {users.length} مستخدم
-        </span>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-        {users.map(u => (
-          <div key={u.uid} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center text-center gap-3 hover:shadow-md transition-shadow">
-            <img 
-              src={u.photoUrl || 'https://www.gravatar.com/avatar/?d=mp'} 
-              alt={u.displayName} 
-              className="w-20 h-20 rounded-full object-cover border-3 border-blue-50 shadow-xs" 
-              onError={(e) => { (e.target as HTMLImageElement).src = 'https://www.gravatar.com/avatar/?d=mp'; }} 
-            />
-            <div>
-              <h3 className="font-bold text-base text-gray-900">{u.displayName}</h3>
-              <span className="text-[11px] text-gray-400">عضو نشط</span>
-            </div>
-          </div>
-        ))}
-        {users.length === 0 && (
-          <div className="col-span-full py-12 text-center text-gray-500 bg-white rounded-2xl border border-dashed border-gray-300">
-            لا يوجد أعضاء حالياً.
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function ProfileView({ user, profile, onInstallClick, canInstall }: { user: User, profile: UserProfile | null, onInstallClick: () => void, canInstall: boolean }) {
-  const [displayName, setDisplayName] = useState(profile?.displayName || user.displayName || '');
-  const [photoUrl, setPhotoUrl] = useState(profile?.photoUrl || user.photoURL || '');
-  const [isSaving, setIsSaving] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (profile) {
-      setDisplayName(profile.displayName);
-      setPhotoUrl(profile.photoUrl);
-    }
-  }, [profile]);
-
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      try {
-        const compressedBase64 = await compressImage(file, 400, 400, 0.7);
-        setPhotoUrl(compressedBase64);
-      } catch (error) {
-        console.error("Error compressing image:", error);
-        alert("Failed to process image. Please try a smaller file.");
-      }
-    }
-  };
-
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSaving(true);
-    try {
-      await updateDoc(doc(db, 'users', user.uid), {
-        displayName,
-        photoUrl,
-        updatedAt: serverTimestamp()
-      });
-      alert('تم تحديث الملف الشخصي بنجاح!');
-    } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, `users/${user.uid}`);
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      {canInstall && (
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
-          <div>
-            <h3 className="font-extrabold text-base sm:text-lg">تثبيت تطبيق مكتبه الهدى</h3>
-            <p className="text-blue-100 text-xs mt-0.5">ثبّت التطبيق على هاتفك للوصول السريع والعمل حتى بدون إنترنت.</p>
-          </div>
-          <button
-            onClick={onInstallClick}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-white text-blue-700 hover:bg-blue-50 px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all whitespace-nowrap shadow-sm active:scale-95"
-          >
-            <Download className="w-4 h-4" />
-            تثبيت التطبيق
-          </button>
-        </div>
-      )}
-
-      <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-gray-200/80">
-        <h2 className="text-xl font-bold mb-6 flex items-center gap-2 text-gray-900">
-          <Settings className="w-5 h-5 text-blue-600" /> تعديل الملف الشخصي
-        </h2>
-        <form onSubmit={handleSave} className="space-y-6">
-          <div className="flex flex-col items-center gap-4 mb-6">
-            <img 
-              src={photoUrl || 'https://www.gravatar.com/avatar/?d=mp'} 
-              alt="Profile" 
-              className="w-28 h-28 rounded-full object-cover border-4 border-gray-100 shadow-sm" 
-              onError={(e) => { (e.target as HTMLImageElement).src = 'https://www.gravatar.com/avatar/?d=mp'; }}
-            />
-            <button 
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-xl text-xs font-bold transition-colors flex items-center gap-2"
-            >
-              <ImagePlus className="w-4 h-4" /> تغيير الصورة الشخصية
-            </button>
-            <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleImageUpload} />
-          </div>
-          
-          <div>
-            <label className="block text-xs font-bold text-gray-700 mb-1.5">الاسم المعروض</label>
-            <input 
-              type="text" 
-              value={displayName} 
-              onChange={e => setDisplayName(e.target.value)} 
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium" 
-              required 
-              maxLength={100}
-            />
-          </div>
-
-          <button 
-            type="submit" 
-            disabled={isSaving} 
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50 shadow-sm active:scale-95"
-          >
-            <Save className="w-4 h-4" /> {isSaving ? 'جاري الحفظ...' : 'حفظ التعديلات'}
-          </button>
-        </form>
-      </div>
     </div>
   );
 }

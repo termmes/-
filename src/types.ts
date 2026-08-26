@@ -30,6 +30,21 @@ export interface UserProfile {
   uid: string;
   displayName: string;
   photoUrl: string;
+  bio?: string;
+  songUrl?: string;
+  songTitle?: string;
+  songArtist?: string;
   role?: 'admin' | 'member' | 'user';
   updatedAt: any;
+}
+
+export interface Story {
+  id: string;
+  userId: string;
+  authorName: string;
+  authorPhoto?: string;
+  mediaUrl?: string;
+  caption?: string;
+  bgColor?: string;
+  createdAt: any;
 }
