@@ -43,16 +43,16 @@ export const InstagramStoriesBar: React.FC<InstagramStoriesBarProps> = ({
   const currentUserHasStory = Boolean(storiesByUserId[currentUserId]?.length);
 
   return (
-    <div className="bg-white p-3.5 sm:p-4 rounded-3xl shadow-sm border border-gray-100/80 mb-6">
-      <div className="flex items-center gap-4 overflow-x-auto scrollbar-thin pb-1 px-1">
+    <div className="bg-white p-3 sm:p-4 rounded-3xl shadow-xs border border-gray-100/80 mb-5">
+      <div className="flex items-center gap-3 sm:gap-4 overflow-x-auto scrollbar-thin pb-1 px-1">
         
         {/* First Item: My Story / Add Story */}
         <div 
           onClick={onOpenAddStory}
-          className="flex flex-col items-center gap-1.5 shrink-0 cursor-pointer group select-none"
+          className="flex flex-col items-center gap-1 shrink-0 cursor-pointer group select-none"
         >
           <div className="relative">
-            <div className={`w-16 h-16 sm:w-18 sm:h-18 rounded-full p-0.5 flex items-center justify-center transition-transform group-hover:scale-105 ${
+            <div className={`w-15 h-15 sm:w-17 sm:h-17 rounded-full p-0.5 flex items-center justify-center transition-transform group-hover:scale-105 ${
               currentUserHasStory 
                 ? 'bg-gradient-to-tr from-amber-400 via-rose-500 to-purple-600' 
                 : 'border-2 border-dashed border-pink-400 bg-pink-50'
@@ -61,6 +61,7 @@ export const InstagramStoriesBar: React.FC<InstagramStoriesBarProps> = ({
                 src={currentUserProfile?.photoUrl || 'https://www.gravatar.com/avatar/?d=mp'}
                 alt="My Story"
                 className="w-full h-full rounded-full object-cover border-2 border-white"
+                loading="lazy"
                 onError={(e) => { (e.target as HTMLImageElement).src = 'https://www.gravatar.com/avatar/?d=mp'; }}
               />
             </div>
@@ -69,14 +70,14 @@ export const InstagramStoriesBar: React.FC<InstagramStoriesBarProps> = ({
               <Plus className="w-3.5 h-3.5 stroke-[3]" />
             </div>
           </div>
-          <span className="text-[11px] sm:text-xs font-black text-gray-800 group-hover:text-pink-600 transition-colors">
+          <span className="text-[11px] font-bold text-gray-800 group-hover:text-pink-600 transition-colors">
             ستوري جديد
           </span>
         </div>
 
         {/* Separator if there are other stories */}
         {userListWithStories.length > 0 && (
-          <div className="h-10 w-[1px] bg-gray-200 shrink-0 mx-1" />
+          <div className="h-9 w-[1px] bg-gray-200 shrink-0 mx-0.5" />
         )}
 
         {/* Stories from other users */}
@@ -86,14 +87,15 @@ export const InstagramStoriesBar: React.FC<InstagramStoriesBarProps> = ({
             <div
               key={group.userId}
               onClick={() => onOpenStoryViewer(idx)}
-              className="flex flex-col items-center gap-1.5 shrink-0 cursor-pointer group select-none"
+              className="flex flex-col items-center gap-1 shrink-0 cursor-pointer group select-none"
             >
               <div className="relative">
-                <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-full p-0.5 bg-gradient-to-tr from-amber-400 via-rose-500 to-purple-600 flex items-center justify-center transition-transform group-hover:scale-105 shadow-xs animate-[pulse_3s_infinite]">
+                <div className="w-15 h-15 sm:w-17 sm:h-17 rounded-full p-0.5 bg-gradient-to-tr from-amber-400 via-rose-500 to-purple-600 flex items-center justify-center transition-transform group-hover:scale-105 shadow-xs">
                   <img
                     src={group.authorPhoto || 'https://www.gravatar.com/avatar/?d=mp'}
                     alt={group.authorName}
                     className="w-full h-full rounded-full object-cover border-2 border-white"
+                    loading="lazy"
                     onError={(e) => { (e.target as HTMLImageElement).src = 'https://www.gravatar.com/avatar/?d=mp'; }}
                   />
                 </div>
@@ -101,7 +103,7 @@ export const InstagramStoriesBar: React.FC<InstagramStoriesBarProps> = ({
                   {group.stories.length}
                 </div>
               </div>
-              <span className="text-[11px] sm:text-xs font-bold text-gray-700 max-w-[70px] truncate text-center group-hover:text-pink-600 transition-colors">
+              <span className="text-[11px] font-medium text-gray-700 max-w-[65px] truncate text-center group-hover:text-pink-600 transition-colors">
                 {isMe ? 'قصصي' : group.authorName}
               </span>
             </div>
@@ -109,9 +111,9 @@ export const InstagramStoriesBar: React.FC<InstagramStoriesBarProps> = ({
         })}
 
         {userListWithStories.length === 0 && (
-          <div className="flex items-center gap-2 text-xs text-gray-400 py-2 pr-2">
+          <div className="flex items-center gap-2 text-xs text-gray-400 py-1.5 pr-2">
             <Sparkles className="w-4 h-4 text-pink-400 shrink-0" />
-            <span>لا توجد قصص نشطة بعد. كن أول من ينشر ستوري!</span>
+            <span>لا توجد قصص نشطة بعد. انقر لنشر ستوري!</span>
           </div>
         )}
 

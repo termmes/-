@@ -1,8 +1,8 @@
 export const compressImage = (
   file: File, 
-  maxWidth: number, 
-  maxHeight: number, 
-  quality: number = 0.7
+  maxWidth: number = 400, 
+  maxHeight: number = 400, 
+  quality: number = 0.65
 ): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -35,6 +35,7 @@ export const compressImage = (
           return;
         }
         ctx.drawImage(img, 0, 0, width, height);
+        // Optimize to JPEG with balanced compression for high-speed mobile performance
         resolve(canvas.toDataURL('image/jpeg', quality));
       };
       img.onerror = (error) => reject(error);

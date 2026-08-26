@@ -252,7 +252,7 @@ export const CommunityView: React.FC<CommunityViewProps> = ({
                       }}
                       className={`w-20 h-20 rounded-full p-1 flex items-center justify-center cursor-pointer transition-transform hover:scale-105 bg-white ${
                         hasStories 
-                          ? 'ring-3 ring-pink-500 ring-offset-2 animate-[pulse_3s_infinite]' 
+                          ? 'ring-3 ring-pink-500 ring-offset-2' 
                           : 'ring-2 ring-gray-100'
                       }`}
                       title={hasStories ? 'اضغط لمشاهدة الستوري' : 'اضغط لعرض البروفايل'}
@@ -261,6 +261,7 @@ export const CommunityView: React.FC<CommunityViewProps> = ({
                         src={u.photoUrl || 'https://www.gravatar.com/avatar/?d=mp'}
                         alt={u.displayName}
                         className="w-full h-full rounded-full object-cover"
+                        loading="lazy"
                         onError={(e) => { (e.target as HTMLImageElement).src = 'https://www.gravatar.com/avatar/?d=mp'; }}
                       />
                     </div>
