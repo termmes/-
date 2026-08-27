@@ -191,11 +191,27 @@ export default function App() {
   };
 
   useEffect(() => {
+    // Safety fallback timeout to prevent hanging on slow iframe auth initializations
+    const timer = setTimeout(() => {
+      setIsAuthReady(true);
+    }, 1200);
+
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      clearTimeout(timer);
       setUser(currentUser);
       setIsAuthReady(true);
+      
+      // If not logged in, auto-attempt guest entry for immediate interactive preview
+      if (!currentUser) {
+        signInAsGuest().catch(() => {
+          // It's okay if guest login is not enabled, user will see the login page
+        });
+      }
     });
-    return () => unsubscribe();
+    return () => {
+      clearTimeout(timer);
+      unsubscribe();
+    };
   }, []);
 
   // Sync category when switching pages
@@ -531,7 +547,17 @@ export default function App() {
   };
 
   if (!isAuthReady) {
-    return <div className="min-h-screen flex items-center justify-center bg-gray-50 text-gray-500 font-sans">جاري التحميل...</div>;
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-900 text-white font-sans p-4" dir="rtl">
+        <div className="w-16 h-16 rounded-3xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center mb-4 text-blue-400 animate-pulse shadow-lg">
+          <Store className="w-8 h-8" />
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+          <span className="text-sm font-bold text-slate-200">جاري فتح سوبر ماركت الهدى...</span>
+        </div>
+      </div>
+    );
   }
 
   if (!user) {
@@ -1110,11 +1136,13 @@ export default function App() {
                 {catalogViewMode === 'table' ? (
                   <QuickInventoryTable 
                     products={displayedProducts}
+                    currentUserId={user?.uid || ''}
                     isSupervisor={isSupervisor}
                     onToggleStock={toggleOutOfStock}
                     onAddVariation={handleAddVariation}
                     onDeleteVariation={handleDeleteVariation}
                     onDeleteProduct={handleDeleteProduct}
+                    onUpdateProduct={handleUpdateProductDetails}
                   />
                 ) : (
                   /* VIEW MODE B: Responsive Product Cards Grid */
