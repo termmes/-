@@ -7,12 +7,12 @@ import {
   UtensilsCrossed, 
   Sparkles, 
   ChevronDown, 
-  Layers,
-  Package,
-  Scroll,
-  ShoppingBag,
-  Coffee,
-  Store
+  Layers, 
+  Package, 
+  BookOpen, 
+  ShoppingBag, 
+  Coffee, 
+  Store 
 } from 'lucide-react';
 
 export interface PageInfo {
@@ -55,9 +55,9 @@ export const PAGES_CONFIG: PageInfo[] = [
   },
   {
     id: 'paper_tissues',
-    title: 'المناديل والورقيات',
-    subtitle: 'مناديل سحب، جيب، مطبخ، وحفاضات',
-    icon: Scroll,
+    title: 'المكتبة والدراسة',
+    subtitle: 'كشاكيل، كراسات، أقلام، أدوات مدرسية، وتجليد',
+    icon: BookOpen,
     color: 'text-sky-600',
     bgColor: 'bg-sky-50 hover:bg-sky-100',
     borderColor: 'border-sky-200'
