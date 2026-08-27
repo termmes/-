@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Product, PageCategory } from '../types';
 import { PAGES_CONFIG } from './PageNavigation';
+import { formatOutOfStockItemText, formatVariationPriceLabel } from '../utils';
 import { 
   X, 
   Copy, 
@@ -44,7 +45,10 @@ export const SupplierOrderModal: React.FC<SupplierOrderModalProps> = ({
       }
       outOfStockByDept[deptKey].push({
         productName: p.name,
-        varNames: outOfStockVars.map(v => v.name + (v.group === '5' ? ' (5ج)' : v.group === '10' ? ' (10ج)' : ''))
+        varNames: outOfStockVars.map(v => {
+          const priceLabel = formatVariationPriceLabel(v);
+          return priceLabel ? `${v.name} (${priceLabel})` : v.name;
+        })
       });
     }
   });

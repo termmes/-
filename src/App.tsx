@@ -56,6 +56,7 @@ import { ProfileView } from './components/ProfileView';
 import { SupermarketStatsSummary } from './components/SupermarketStatsSummary';
 import { QuickInventoryTable } from './components/QuickInventoryTable';
 import { SupplierOrderModal } from './components/SupplierOrderModal';
+import { formatOutOfStockItemText } from './utils';
 
 enum OperationType {
   CREATE = 'create',
@@ -504,17 +505,17 @@ export default function App() {
     return true;
   });
 
-  // Out of stock calculations
+  // Out of stock calculations with price / group details
   const outOfStockItems = products.flatMap(p => 
-    p.variations.filter(v => v.isOutOfStock).map(v => `${p.name} - ${v.name}`)
+    p.variations.filter(v => v.isOutOfStock).map(v => formatOutOfStockItemText(p.name, v))
   );
 
   const activePageOutOfStockItems = displayedProducts.flatMap(p =>
-    p.variations.filter(v => v.isOutOfStock).map(v => `${p.name} - ${v.name}`)
+    p.variations.filter(v => v.isOutOfStock).map(v => formatOutOfStockItemText(p.name, v))
   );
 
   const handleCopy = () => {
-    const textToCopy = outOfStockItems.join('\n');
+    const textToCopy = outOfStockItems.map((item, i) => `${i + 1}. ${item}`).join('\n');
     navigator.clipboard.writeText(textToCopy);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);

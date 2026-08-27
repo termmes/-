@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Product, Variation } from '../types';
 import { ProductSettingsModal } from './ProductSettingsModal';
+import { formatVariationPriceLabel } from '../utils';
 import { 
   ImagePlus, 
   Trash2, 
@@ -195,11 +196,24 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                       : 'bg-white border-gray-200 shadow-2xs hover:border-gray-300'
                   }`}
                 >
-                  <span className={`text-xs sm:text-sm lg:text-base leading-snug break-words min-w-0 font-bold flex-1 ${
-                    variation.isOutOfStock ? 'text-red-700' : 'text-gray-800'
-                  }`}>
-                    {variation.name}
-                  </span>
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <span className={`text-xs sm:text-sm lg:text-base leading-snug break-words min-w-0 font-bold ${
+                      variation.isOutOfStock ? 'text-red-700' : 'text-gray-800'
+                    }`}>
+                      {variation.name}
+                    </span>
+                    {formatVariationPriceLabel(variation) && (
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md shrink-0 ${
+                        variation.group === '5'
+                          ? 'bg-emerald-100/80 text-emerald-800'
+                          : variation.group === '10'
+                          ? 'bg-blue-100/80 text-blue-800'
+                          : 'bg-purple-100/80 text-purple-800'
+                      }`}>
+                        {formatVariationPriceLabel(variation)}
+                      </span>
+                    )}
+                  </div>
                   <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0 pt-1 sm:pt-0 border-t sm:border-t-0 border-gray-100/80 w-full sm:w-auto">
                     <button
                       type="button"

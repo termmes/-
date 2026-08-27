@@ -296,7 +296,7 @@ export const QuickInventoryTable: React.FC<QuickInventoryTableProps> = ({
                       <span className={`w-2 h-2 rounded-full shrink-0 ${v.isOutOfStock ? 'bg-red-500 animate-pulse' : 'bg-emerald-500'}`} />
                       <span className="font-extrabold">{v.name}</span>
                       <span className="text-[10px] opacity-75">
-                        {v.group === '5' ? '(5 ج)' : v.group === '10' ? '(10 ج)' : ''}
+                        {v.group === '5' ? '(5 جنيه)' : v.group === '10' ? '(10 جنيه)' : v.price ? `(${v.price} جنيه)` : ''}
                       </span>
                       <span className="text-[10px] font-black underline mr-0.5">
                         {v.isOutOfStock ? 'ناقص' : 'متوفر'}
@@ -459,7 +459,7 @@ export const QuickInventoryTable: React.FC<QuickInventoryTableProps> = ({
                           <span className={`w-2 h-2 rounded-full ${v.isOutOfStock ? 'bg-red-500 animate-pulse' : 'bg-emerald-500'}`} />
                           <span className="font-extrabold">{v.name}</span>
                           <span className="text-[10px] opacity-75">
-                            {v.group === '5' ? '(5 ج)' : v.group === '10' ? '(10 ج)' : ''}
+                            {v.group === '5' ? '(5 جنيه)' : v.group === '10' ? '(10 جنيه)' : v.price ? `(${v.price} جنيه)` : ''}
                           </span>
                           <span className="text-[10px] font-black underline mr-0.5">
                             {v.isOutOfStock ? 'ناقص' : 'متوفر'}

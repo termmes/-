@@ -34,6 +34,7 @@ import {
   CheckCheck
 } from 'lucide-react';
 import { User } from 'firebase/auth';
+import { formatOutOfStockItemText, formatVariationPriceLabel } from '../utils';
 
 const CATEGORY_NAMES: Record<string, { label: string, color: string, icon: React.ComponentType<{ className?: string }> }> = {
   refrigerator: { label: 'الثلاجة', color: 'bg-cyan-50 text-cyan-700 border-cyan-200', icon: Snowflake },
@@ -100,9 +101,11 @@ export const NeededAndRequiredView: React.FC<NeededAndRequiredViewProps> = ({
         variationId: variation.id,
         variationName: variation.name,
         group: variation.group,
+        price: variation.price,
+        priceLabel: formatVariationPriceLabel(variation),
         category: product.category || 'stands',
         categoryInfo,
-        fullName: `${product.name} - ${variation.name}`
+        fullName: formatOutOfStockItemText(product.name, variation)
       }));
   });
 
@@ -399,8 +402,8 @@ export const NeededAndRequiredView: React.FC<NeededAndRequiredViewProps> = ({
                             <CatIcon className="w-3 h-3" />
                             {shortage.categoryInfo.label}
                           </span>
-                          <span className="text-[10px] text-gray-400">
-                            {shortage.group === '5' ? 'فئة 5ج' : shortage.group === '10' ? 'فئة 10ج' : 'أخرى'}
+                          <span className="text-[10px] font-bold text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded-md">
+                            {shortage.priceLabel || (shortage.group === '5' ? '5 جنيه' : shortage.group === '10' ? '10 جنيه' : 'أخرى')}
                           </span>
                         </div>
                         <h4 className="text-sm sm:text-base font-extrabold text-gray-900 truncate">
