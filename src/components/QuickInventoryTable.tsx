@@ -209,9 +209,179 @@ export const QuickInventoryTable: React.FC<QuickInventoryTableProps> = ({
 
       </div>
 
-      {/* Responsive Table Container */}
-      <div className="overflow-x-auto rounded-2xl border border-gray-200 bg-white">
-        <table className="w-full text-right border-collapse min-w-[700px]">
+      {/* Mobile Card List View (Phones & Small Devices) */}
+      <div className="block md:hidden space-y-3">
+        {filteredProducts.map((product, idx) => {
+          const deptInfo = getDeptInfo(product.category);
+          const DeptIcon = deptInfo.icon;
+          const canManage = isSupervisor || product.ownerId === currentUserId;
+          const outOfStockVars = product.variations?.filter(v => v.isOutOfStock) || [];
+
+          return (
+            <div 
+              key={product.id} 
+              className="bg-white rounded-2xl p-3.5 border border-gray-200 shadow-2xs space-y-3"
+            >
+              {/* Product Header Row */}
+              <div className="flex items-start justify-between gap-2.5">
+                <div className="flex items-start gap-2.5 min-w-0">
+                  <div className="w-12 h-12 rounded-xl bg-gray-100 border border-gray-200 overflow-hidden shrink-0">
+                    <img 
+                      src={product.imageUrl} 
+                      alt={product.name} 
+                      className="w-full h-full object-cover"
+                      onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1604719312566-8912e9227c6a?auto=format&fit=crop&q=80&w=150&h=150'; }}
+                    />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="font-black text-gray-900 text-sm truncate">
+                        {product.name}
+                      </span>
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold border ${deptInfo.bgColor} ${deptInfo.color} ${deptInfo.borderColor}`}>
+                        <DeptIcon className="w-3 h-3" />
+                        <span>{deptInfo.title}</span>
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 mt-1 text-[11px] text-gray-400">
+                      <span>#{idx + 1}</span>
+                      <span>•</span>
+                      <span>{product.variations?.length || 0} طعم/حجم</span>
+                      {outOfStockVars.length > 0 && (
+                        <span className="text-rose-600 font-bold bg-rose-50 px-1.5 py-0.2 rounded border border-rose-200 text-[10px]">
+                          {outOfStockVars.length} ناقص
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Edit & Delete for Supervisor */}
+                {canManage && (
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedProductForModal(product)}
+                      className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-colors cursor-pointer"
+                      title="تعديل تفاصيل الصنف"
+                    >
+                      <Edit3 className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onDeleteProduct(product.id)}
+                      className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors cursor-pointer"
+                      title="حذف الصنف"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Variations Quick Toggles */}
+              <div className="pt-2 border-t border-gray-100">
+                <div className="flex flex-wrap gap-1.5 items-center">
+                  {product.variations?.map((v) => (
+                    <button
+                      key={v.id}
+                      type="button"
+                      onClick={() => onToggleStock(product.id, v.id)}
+                      className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all border flex items-center gap-1.5 cursor-pointer active:scale-95 min-h-[38px] ${
+                        v.isOutOfStock
+                          ? 'bg-red-50 text-red-700 border-red-300 ring-1 ring-red-400'
+                          : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                      }`}
+                    >
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${v.isOutOfStock ? 'bg-red-500 animate-pulse' : 'bg-emerald-500'}`} />
+                      <span className="font-extrabold">{v.name}</span>
+                      <span className="text-[10px] opacity-75">
+                        {v.group === '5' ? '(5 ج)' : v.group === '10' ? '(10 ج)' : ''}
+                      </span>
+                      <span className="text-[10px] font-black underline mr-0.5">
+                        {v.isOutOfStock ? 'ناقص' : 'متوفر'}
+                      </span>
+                    </button>
+                  ))}
+
+                  {product.variations?.length === 0 && (
+                    <span className="text-xs text-gray-400 italic">لا توجد أطعمة مضافة</span>
+                  )}
+                </div>
+
+                {/* Quick Add Inline Variation for Mobile */}
+                {canManage && (
+                  <div className="mt-2 pt-2 border-t border-dashed border-gray-100">
+                    {quickAddProductId === product.id ? (
+                      <div className="flex items-center gap-1 bg-blue-50 p-1.5 rounded-xl border border-blue-200 flex-wrap">
+                        <input
+                          type="text"
+                          placeholder="اسم الطعم..."
+                          value={quickAddName}
+                          onChange={(e) => setQuickAddName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleQuickAddVariation(product.id);
+                            if (e.key === 'Escape') setQuickAddProductId(null);
+                          }}
+                          className="flex-1 min-w-[120px] px-2 py-1.5 bg-white border border-blue-300 rounded-lg text-xs font-bold outline-none"
+                          autoFocus
+                        />
+                        <select
+                          value={quickAddGroup}
+                          onChange={(e) => setQuickAddGroup(e.target.value as any)}
+                          className="px-2 py-1.5 bg-white border border-blue-300 rounded-lg text-xs font-bold text-gray-700"
+                        >
+                          <option value="5">5 ج</option>
+                          <option value="10">10 ج</option>
+                          <option value="other">أخرى</option>
+                        </select>
+                        <button
+                          type="button"
+                          onClick={() => handleQuickAddVariation(product.id)}
+                          className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 min-h-[36px]"
+                        >
+                          + إضافة
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setQuickAddProductId(null)}
+                          className="p-1 text-gray-400 hover:text-gray-600"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setQuickAddProductId(product.id);
+                          setQuickAddName('');
+                        }}
+                        className="w-full py-1.5 bg-gray-50 hover:bg-blue-50 text-gray-500 hover:text-blue-700 border border-dashed border-gray-300 hover:border-blue-300 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>إضافة طعم جديد سريعاً</span>
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+
+        {filteredProducts.length === 0 && (
+          <div className="bg-white rounded-2xl p-8 text-center text-gray-400 border border-gray-200">
+            <Package className="w-10 h-10 mx-auto text-gray-300 mb-2" />
+            <p className="font-bold text-gray-600 text-sm">لا توجد أصناف مطابقة لمعايير البحث</p>
+            <p className="text-xs text-gray-400 mt-1">جرب تغيير شروط الفلترة أو تفريغ خانة البحث</p>
+          </div>
+        )}
+      </div>
+
+      {/* Desktop Table Container (Tablets, Laptops, TV) */}
+      <div className="hidden md:block overflow-x-auto rounded-2xl border border-gray-200 bg-white">
+        <table className="w-full text-right border-collapse">
           <thead>
             <tr className="bg-gray-50/80 border-b border-gray-200 text-gray-600 text-xs font-black">
               <th className="p-3.5 pr-4 w-12">#</th>

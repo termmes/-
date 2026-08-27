@@ -165,68 +165,75 @@ export const PageNavigation: React.FC<PageNavigationProps> = ({
         <ChevronDown className={`w-4 h-4 text-white/80 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
-      {/* Dropdown Menu Modal */}
+      {/* Dropdown Menu Modal - Responsive on mobile & desktop */}
       {isOpen && (
-        <div 
-          id="pages-dropdown-menu"
-          className="absolute left-0 sm:left-auto sm:right-0 mt-2 w-72 sm:w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150"
-        >
-          <div className="px-4 py-2 border-b border-gray-100 flex items-center justify-between">
-            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">صفحات وأقسام المتجر</span>
-            <span className="text-[11px] bg-blue-50 text-blue-700 font-semibold px-2 py-0.5 rounded-full">
-              {PAGES_CONFIG.length} صفحات
-            </span>
-          </div>
+        <>
+          {/* Backdrop for mobile */}
+          <div 
+            className="fixed inset-0 bg-black/20 z-40 sm:hidden"
+            onClick={() => setIsOpen(false)}
+          />
+          <div 
+            id="pages-dropdown-menu"
+            className="fixed sm:absolute left-3 right-3 sm:left-auto sm:right-0 top-18 sm:top-full mt-1 sm:w-80 bg-white rounded-2xl shadow-2xl border border-gray-200 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150 max-h-[80vh] flex flex-col"
+          >
+            <div className="px-4 py-2 border-b border-gray-100 flex items-center justify-between shrink-0">
+              <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">صفحات وأقسام المتجر</span>
+              <span className="text-[11px] bg-blue-50 text-blue-700 font-semibold px-2 py-0.5 rounded-full">
+                {PAGES_CONFIG.length} صفحات
+              </span>
+            </div>
 
-          <div className="p-2 space-y-1 max-h-[70vh] overflow-y-auto">
-            {PAGES_CONFIG.map((page) => {
-              const Icon = page.icon;
-              const isSelected = currentPage === page.id;
-              const count = getBadgeCount(page.id);
+            <div className="p-2 space-y-1 overflow-y-auto no-scrollbar flex-1">
+              {PAGES_CONFIG.map((page) => {
+                const Icon = page.icon;
+                const isSelected = currentPage === page.id;
+                const count = getBadgeCount(page.id);
 
-              return (
-                <button
-                  key={page.id}
-                  id={`page-nav-item-${page.id}`}
-                  type="button"
-                  onClick={() => {
-                    onSelectPage(page.id);
-                    setIsOpen(false);
-                  }}
-                  className={`w-full flex items-center justify-between p-2.5 rounded-xl text-right transition-all ${
-                    isSelected 
-                      ? 'bg-blue-50 border-2 border-blue-500 shadow-xs' 
-                      : 'hover:bg-gray-50 border border-transparent'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-xl ${page.bgColor} ${page.color} shrink-0`}>
-                      <Icon className="w-5 h-5" />
+                return (
+                  <button
+                    key={page.id}
+                    id={`page-nav-item-${page.id}`}
+                    type="button"
+                    onClick={() => {
+                      onSelectPage(page.id);
+                      setIsOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between p-2.5 rounded-xl text-right transition-all min-h-[44px] cursor-pointer ${
+                      isSelected 
+                        ? 'bg-blue-50 border-2 border-blue-500 shadow-xs' 
+                        : 'hover:bg-gray-50 border border-transparent'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={`p-2 rounded-xl ${page.bgColor} ${page.color} shrink-0`}>
+                        <Icon className="w-5 h-5" />
+                      </div>
+                      <div className="flex flex-col text-right min-w-0">
+                        <span className={`text-xs sm:text-sm font-bold truncate ${isSelected ? 'text-blue-900' : 'text-gray-900'}`}>
+                          {page.title}
+                        </span>
+                        <span className="text-[10px] sm:text-[11px] text-gray-500 truncate">
+                          {page.subtitle}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex flex-col text-right">
-                      <span className={`text-sm font-bold ${isSelected ? 'text-blue-900' : 'text-gray-900'}`}>
-                        {page.title}
-                      </span>
-                      <span className="text-[11px] text-gray-500 truncate max-w-[150px] sm:max-w-[170px]">
-                        {page.subtitle}
+
+                    <div className="flex items-center gap-1.5 shrink-0 mr-2">
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                        page.id === 'needed'
+                          ? count > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-500'
+                          : isSelected ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'
+                      }`}>
+                        {count}
                       </span>
                     </div>
-                  </div>
-
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                      page.id === 'needed'
-                        ? count > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-500'
-                        : isSelected ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'
-                    }`}>
-                      {count}
-                    </span>
-                  </div>
-                </button>
-              );
-            })}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );

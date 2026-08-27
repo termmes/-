@@ -1145,8 +1145,7 @@ export default function App() {
                     onUpdateProduct={handleUpdateProductDetails}
                   />
                 ) : (
-                  /* VIEW MODE B: Responsive Product Cards Grid */
-                  <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-6">
+                  <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 min-[2000px]:grid-cols-5 min-[2500px]:grid-cols-6 gap-3 sm:gap-4 lg:gap-6">
                     {displayedProducts.map(product => (
                       <ProductCard 
                         key={product.id} 
@@ -1285,29 +1284,33 @@ export default function App() {
         products={products}
       />
 
-      {/* Mobile Bottom Nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-200 flex items-center justify-around pb-[env(safe-area-inset-bottom,0.5rem)] z-50 shadow-lg">
+      {/* Mobile Bottom Nav (Phones & Small Devices with Safe-Area support) */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-lg border-t border-gray-200/90 flex items-center justify-around px-1 pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom,0.5rem))] z-50 shadow-lg">
         <button 
           onClick={() => setActiveTab('catalog')} 
-          className={`flex flex-col items-center p-2.5 ${activeTab === 'catalog' && currentPage !== 'needed' ? 'text-blue-600 font-bold' : 'text-gray-400 font-medium'}`}
+          className={`flex flex-col items-center justify-center p-1.5 min-w-[50px] min-h-[48px] rounded-xl transition-all cursor-pointer ${
+            activeTab === 'catalog' && currentPage !== 'needed' ? 'text-blue-600 font-black' : 'text-gray-400 font-medium hover:text-gray-600'
+          }`}
         >
           <Store className="w-5 h-5" />
-          <span className="text-[10px] mt-1">الأقسام</span>
+          <span className="text-[10px] mt-0.5 font-bold">الأقسام</span>
         </button>
 
         <button 
           onClick={() => setActiveTab('outOfStock')} 
-          className={`flex flex-col items-center p-2.5 ${activeTab === 'outOfStock' ? 'text-red-600 font-bold' : 'text-gray-400 font-medium'} relative`}
+          className={`flex flex-col items-center justify-center p-1.5 min-w-[50px] min-h-[48px] rounded-xl transition-all cursor-pointer ${
+            activeTab === 'outOfStock' ? 'text-red-600 font-black' : 'text-gray-400 font-medium hover:text-gray-600'
+          } relative`}
         >
           <div className="relative">
             <AlertCircle className="w-5 h-5" />
             {outOfStockItems.length > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+              <span className="absolute -top-1.5 -right-2 bg-red-600 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center shadow-xs animate-pulse">
                 {outOfStockItems.length}
               </span>
             )}
           </div>
-          <span className="text-[10px] mt-1">النواقص</span>
+          <span className="text-[10px] mt-0.5 font-bold">النواقص</span>
         </button>
 
         {/* المطلوب والنواقص */}
@@ -1316,41 +1319,47 @@ export default function App() {
             setCurrentPage('needed');
             setActiveTab('catalog');
           }} 
-          className={`flex flex-col items-center p-2.5 relative ${currentPage === 'needed' && activeTab === 'catalog' ? 'text-emerald-600 font-bold' : 'text-gray-400 font-medium'}`}
+          className={`flex flex-col items-center justify-center p-1.5 min-w-[50px] min-h-[48px] rounded-xl transition-all cursor-pointer ${
+            currentPage === 'needed' && activeTab === 'catalog' ? 'text-emerald-600 font-black' : 'text-gray-400 font-medium hover:text-gray-600'
+          }`}
         >
           <div className="relative">
             <ClipboardList className="w-5 h-5" />
             {remindersCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-emerald-600 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+              <span className="absolute -top-1.5 -right-2 bg-emerald-600 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center shadow-xs">
                 {remindersCount}
               </span>
             )}
           </div>
-          <span className="text-[10px] mt-1">المطلوب</span>
+          <span className="text-[10px] mt-0.5 font-bold">المطلوب</span>
         </button>
 
         <button 
           onClick={() => setIsSupplierOrderOpen(true)} 
-          className="flex flex-col items-center p-2.5 text-emerald-600 font-bold"
+          className="flex flex-col items-center justify-center p-1.5 min-w-[50px] min-h-[48px] rounded-xl text-teal-600 font-bold hover:text-teal-700 transition-all cursor-pointer"
         >
           <Send className="w-5 h-5" />
-          <span className="text-[10px] mt-1">الطلبيات</span>
+          <span className="text-[10px] mt-0.5 font-bold">الطلبيات</span>
         </button>
 
         <button 
           onClick={() => setActiveTab('community')} 
-          className={`flex flex-col items-center p-2.5 ${activeTab === 'community' ? 'text-blue-600 font-bold' : 'text-gray-400 font-medium'}`}
+          className={`flex flex-col items-center justify-center p-1.5 min-w-[50px] min-h-[48px] rounded-xl transition-all cursor-pointer ${
+            activeTab === 'community' ? 'text-indigo-600 font-black' : 'text-gray-400 font-medium hover:text-gray-600'
+          }`}
         >
           <Users className="w-5 h-5" />
-          <span className="text-[10px] mt-1">المشرفين</span>
+          <span className="text-[10px] mt-0.5 font-bold">المشرفين</span>
         </button>
 
         <button 
           onClick={() => setActiveTab('profile')} 
-          className={`flex flex-col items-center p-2.5 ${activeTab === 'profile' ? 'text-blue-600 font-bold' : 'text-gray-400 font-medium'}`}
+          className={`flex flex-col items-center justify-center p-1.5 min-w-[50px] min-h-[48px] rounded-xl transition-all cursor-pointer ${
+            activeTab === 'profile' ? 'text-blue-600 font-black' : 'text-gray-400 font-medium hover:text-gray-600'
+          }`}
         >
           <Settings className="w-5 h-5" />
-          <span className="text-[10px] mt-1">حسابي</span>
+          <span className="text-[10px] mt-0.5 font-bold">حسابي</span>
         </button>
       </nav>
     </div>

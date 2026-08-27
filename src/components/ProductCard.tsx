@@ -191,16 +191,16 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                       : 'bg-white border-gray-200 shadow-2xs hover:border-gray-300'
                   }`}
                 >
-                  <span className={`text-xs sm:text-sm lg:text-base leading-snug break-words min-w-0 font-bold ${
+                  <span className={`text-xs sm:text-sm lg:text-base leading-snug break-words min-w-0 font-bold flex-1 ${
                     variation.isOutOfStock ? 'text-red-700' : 'text-gray-800'
                   }`}>
                     {variation.name}
                   </span>
-                  <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0 pt-1 sm:pt-0 border-t sm:border-t-0 border-gray-100">
+                  <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0 pt-1 sm:pt-0 border-t sm:border-t-0 border-gray-100/80 w-full sm:w-auto">
                     <button
                       type="button"
                       onClick={() => onToggleStock(product.id, variation.id)}
-                      className={`text-xs sm:text-sm px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg font-black transition-all shadow-2xs active:scale-95 min-h-[38px] flex items-center justify-center ${
+                      className={`flex-1 sm:flex-initial text-xs sm:text-sm px-3 py-2 sm:px-3.5 sm:py-2 rounded-xl font-black transition-all shadow-2xs active:scale-95 min-h-[42px] flex items-center justify-center cursor-pointer ${
                         variation.isOutOfStock 
                           ? 'bg-red-600 text-white hover:bg-red-700' 
                           : 'bg-emerald-50 border border-emerald-300 text-emerald-700 hover:bg-emerald-100'
@@ -213,7 +213,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                       <button
                         type="button"
                         onClick={() => onDeleteVariation(product.id, variation.id)}
-                        className="text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors p-2 rounded-lg min-h-[38px] min-w-[38px] flex items-center justify-center"
+                        className="text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors p-2 rounded-xl min-h-[42px] min-w-[42px] flex items-center justify-center cursor-pointer"
                         title="حذف هذا الصنف"
                       >
                         <Trash2 className="w-4 h-4" />
