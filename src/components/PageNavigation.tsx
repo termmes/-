@@ -8,7 +8,11 @@ import {
   Sparkles, 
   ChevronDown, 
   Layers,
-  Package
+  Package,
+  Scroll,
+  ShoppingBag,
+  Coffee,
+  Store
 } from 'lucide-react';
 
 export interface PageInfo {
@@ -24,8 +28,8 @@ export interface PageInfo {
 export const PAGES_CONFIG: PageInfo[] = [
   {
     id: 'refrigerator',
-    title: 'الثلاجة',
-    subtitle: 'المشروبات، الألبان، والمثلجات',
+    title: 'الثلاجات والمشروبات',
+    subtitle: 'المشروبات، الألبان، الأجبان، والمثلجات',
     icon: Snowflake,
     color: 'text-cyan-600',
     bgColor: 'bg-cyan-50 hover:bg-cyan-100',
@@ -33,8 +37,8 @@ export const PAGES_CONFIG: PageInfo[] = [
   },
   {
     id: 'stands',
-    title: 'الستاندات',
-    subtitle: 'الشيبسي، البسكويت، والحلويات',
+    title: 'الستاندات والسناكس',
+    subtitle: 'الشيبسي، المقرمشات، البسكويت، والحلويات',
     icon: LayoutGrid,
     color: 'text-amber-600',
     bgColor: 'bg-amber-50 hover:bg-amber-100',
@@ -42,35 +46,62 @@ export const PAGES_CONFIG: PageInfo[] = [
   },
   {
     id: 'indomie',
-    title: 'إندومي',
-    subtitle: 'جميع أنواع وأطعمة الإندومي',
+    title: 'إندومي ومعكرونة',
+    subtitle: 'نودلز، إندومي بجميع أطعمتها، وجبات سريعة',
     icon: UtensilsCrossed,
     color: 'text-red-600',
     bgColor: 'bg-red-50 hover:bg-red-100',
     borderColor: 'border-red-200'
   },
   {
+    id: 'paper_tissues',
+    title: 'المناديل والورقيات',
+    subtitle: 'مناديل سحب، جيب، مطبخ، وحفاضات',
+    icon: Scroll,
+    color: 'text-sky-600',
+    bgColor: 'bg-sky-50 hover:bg-sky-100',
+    borderColor: 'border-sky-200'
+  },
+  {
     id: 'cleaners',
-    title: 'المناديل والمنظفات',
-    subtitle: 'المناديل، المساحيق، وأدوات النظافة',
+    title: 'المنظفات والعناية',
+    subtitle: 'مساحيق غسيل، مطهرات، صابون، وأدوات نظافة',
     icon: Sparkles,
     color: 'text-indigo-600',
     bgColor: 'bg-indigo-50 hover:bg-indigo-100',
     borderColor: 'border-indigo-200'
   },
   {
-    id: 'needed',
-    title: 'المطلوب والنواقص',
-    subtitle: 'دفتر الملاحظات والنواقص اليومية',
-    icon: ClipboardList,
+    id: 'grocery',
+    title: 'البقالة والمعلبات',
+    subtitle: 'أرز، سكر، زيت، تونة، صلصة، وبقوليات',
+    icon: ShoppingBag,
     color: 'text-emerald-600',
     bgColor: 'bg-emerald-50 hover:bg-emerald-100',
     borderColor: 'border-emerald-200'
   },
   {
+    id: 'spices_nuts',
+    title: 'العطارة والتسالي',
+    subtitle: 'توابل، بن وشاي، مكسرات ولب',
+    icon: Coffee,
+    color: 'text-orange-600',
+    bgColor: 'bg-orange-50 hover:bg-orange-100',
+    borderColor: 'border-orange-200'
+  },
+  {
+    id: 'needed',
+    title: 'المطلوب والنواقص',
+    subtitle: 'دفتر الملاحظات وطلبيات التوريد الفورية',
+    icon: ClipboardList,
+    color: 'text-rose-600',
+    bgColor: 'bg-rose-50 hover:bg-rose-100',
+    borderColor: 'border-rose-200'
+  },
+  {
     id: 'all',
-    title: 'جميع الأقسام',
-    subtitle: 'عرض كامل المنتجات في مكان واحد',
+    title: 'الكتالوج الشامل',
+    subtitle: 'عرض وجرد كامل منتجات السوبر ماركت',
     icon: Package,
     color: 'text-gray-700',
     bgColor: 'bg-gray-50 hover:bg-gray-100',

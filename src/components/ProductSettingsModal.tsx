@@ -211,10 +211,13 @@ export const ProductSettingsModal: React.FC<ProductSettingsModalProps> = ({
               onChange={(e) => setCategory(e.target.value)}
               className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-xl text-sm font-bold text-gray-800 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer"
             >
-              <option value="refrigerator">❄️ الثلاجة</option>
-              <option value="stands">🏷️ الستاندات (شيبسي / مقرمشات)</option>
-              <option value="indomie">🍜 إندومي</option>
-              <option value="cleaners">🧼 المناديل والمنظفات</option>
+              <option value="refrigerator">❄️ الثلاجات والمشروبات والألبان</option>
+              <option value="stands">🏷️ الستاندات والسناكس والحلويات</option>
+              <option value="indomie">🍜 إندومي ونودلز ومعكرونة</option>
+              <option value="paper_tissues">🧻 المناديل والورقيات</option>
+              <option value="cleaners">🧼 المنظفات والعناية المنزلية</option>
+              <option value="grocery">🥫 البقالة الجافة والمعلبات</option>
+              <option value="spices_nuts">🍬 العطارة والتوابل والتسالي</option>
             </select>
           </div>
 

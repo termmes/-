@@ -1,37 +1,93 @@
 import React, { useState } from 'react';
-import { UserProfile, Product, ReminderItem } from '../types';
+import { UserProfile, Product, ReminderItem, UserRole } from '../types';
 import { ProfileHeaderDisplay } from './ProfileHeaderDisplay';
 import { 
   X, 
   Package, 
   ClipboardList, 
   Edit3,
-  ExternalLink
+  Shield,
+  ShieldCheck,
+  ShieldAlert,
+  Crown,
+  UserCheck,
+  Check
 } from 'lucide-react';
 
 interface UserProfileModalProps {
   profileUser: UserProfile;
   currentUserId: string;
   isOwner: boolean;
+  isAdmin?: boolean;
   userProducts: Product[];
   userReminders: ReminderItem[];
   isOpen: boolean;
   onClose: () => void;
   onOpenEditProfile: () => void;
+  onUpdateRole?: (userId: string, newRole: UserRole) => Promise<void>;
 }
 
 export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   profileUser,
+  currentUserId,
   isOwner,
+  isAdmin = false,
   userProducts,
   userReminders,
   isOpen,
   onClose,
-  onOpenEditProfile
+  onOpenEditProfile,
+  onUpdateRole
 }) => {
-  const [activeTab, setActiveTab] = useState<'products' | 'reminders'>('products');
+  const [activeTab, setActiveTab] = useState<'products' | 'reminders' | 'admin'>('products');
+  const [isUpdatingRole, setIsUpdatingRole] = useState(false);
+  const [roleSuccessMsg, setRoleSuccessMsg] = useState('');
 
   if (!isOpen) return null;
+
+  const currentRole: UserRole = profileUser.role || 'user';
+
+  const handleRoleChange = async (newRole: UserRole) => {
+    if (!onUpdateRole) return;
+    setIsUpdatingRole(true);
+    setRoleSuccessMsg('');
+    try {
+      await onUpdateRole(profileUser.uid, newRole);
+      setRoleSuccessMsg('تم تحديث الصلاحية بنجاح!');
+      setTimeout(() => setRoleSuccessMsg(''), 3000);
+    } catch (error) {
+      console.error('Error changing role:', error);
+      alert('حدث خطأ أثناء تغيير الصلاحية');
+    } finally {
+      setIsUpdatingRole(false);
+    }
+  };
+
+  const getRoleBadge = (role: UserRole) => {
+    switch (role) {
+      case 'admin':
+        return {
+          title: 'مشرف عام / مدير',
+          color: 'bg-amber-500/20 text-amber-300 border-amber-400/40',
+          icon: Crown
+        };
+      case 'supervisor':
+        return {
+          title: 'مشرف كامل الصلاحيات',
+          color: 'bg-blue-500/20 text-blue-300 border-blue-400/40',
+          icon: ShieldCheck
+        };
+      default:
+        return {
+          title: 'عضو مسجل',
+          color: 'bg-gray-500/20 text-gray-300 border-gray-400/30',
+          icon: UserCheck
+        };
+    }
+  };
+
+  const roleInfo = getRoleBadge(currentRole);
+  const RoleIcon = roleInfo.icon;
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4">
@@ -53,7 +109,13 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
             customization={profileUser.customization}
             size="normal"
             extraAction={
-              <div className="flex items-center justify-center sm:justify-start gap-3 pt-1">
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5 pt-1">
+                {/* Role Pill */}
+                <div className={`flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-black border backdrop-blur-md ${roleInfo.color}`}>
+                  <RoleIcon className="w-3.5 h-3.5" />
+                  <span>{roleInfo.title}</span>
+                </div>
+
                 <div className="text-center bg-black/30 backdrop-blur-md px-3 py-1 rounded-xl border border-white/10">
                   <div className="text-sm font-black text-white">{userProducts.length}</div>
                   <div className="text-[10px] text-white/80">الأصناف المسجلة</div>
@@ -94,6 +156,21 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
             <ClipboardList className="w-4 h-4" />
             <span>النواقص والملاحظات ({userReminders.length})</span>
           </button>
+
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={() => setActiveTab('admin')}
+              className={`flex-1 py-3 text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 border-b-2 transition-colors cursor-pointer ${
+                activeTab === 'admin' 
+                  ? 'border-amber-600 text-amber-700 bg-amber-50/50' 
+                  : 'border-transparent text-gray-500 hover:text-amber-700'
+              }`}
+            >
+              <Shield className="w-4 h-4" />
+              <span>إدارة الرتبة والصلاحيات</span>
+            </button>
+          )}
         </div>
 
         {/* Tab Content Areas */}
@@ -151,6 +228,141 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
               )}
             </div>
           )}
+
+          {/* TAB 3: ADMIN ROLE MANAGEMENT */}
+          {activeTab === 'admin' && isAdmin && (
+            <div className="space-y-4">
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
+                <div className="flex items-center gap-2 text-amber-800 font-extrabold text-sm mb-1">
+                  <ShieldCheck className="w-5 h-5 text-amber-600" />
+                  <span>لوحة تحكم المشرفين ورتب الأعضاء</span>
+                </div>
+                <p className="text-xs text-amber-700 leading-relaxed">
+                  بصفتك مديراً للنظام، يمكنك تعيين المشرفين وتحديد صلاحياتهم للتحكم في المنتجات، الأقسام، النواقص والطلبيات.
+                </p>
+              </div>
+
+              {roleSuccessMsg && (
+                <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold p-3 rounded-xl flex items-center gap-2">
+                  <Check className="w-4 h-4 text-emerald-600" />
+                  <span>{roleSuccessMsg}</span>
+                </div>
+              )}
+
+              <div className="space-y-3">
+                {/* Option 1: Supervisor (مشرف) */}
+                <div 
+                  onClick={() => !isUpdatingRole && handleRoleChange('supervisor')}
+                  className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex items-start justify-between gap-3 ${
+                    currentRole === 'supervisor' 
+                      ? 'border-blue-600 bg-blue-50/70 shadow-xs' 
+                      : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="p-2.5 bg-blue-100 text-blue-700 rounded-xl mt-0.5">
+                      <ShieldCheck className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-sm font-black text-gray-900">مشرف (Supervisor)</h4>
+                        {currentRole === 'supervisor' && (
+                          <span className="text-[10px] bg-blue-600 text-white font-bold px-2 py-0.5 rounded-full">الرتبة الحالية</span>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        يقدر يعمل أي حاجة في الموقع: إضافة وتعديل وحذف أي منتج، تعديل الصور والأسماء، تصفير النواقص وإدارة الدفتر بالكامل.
+                      </p>
+                    </div>
+                  </div>
+                  <button 
+                    disabled={isUpdatingRole}
+                    className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all ${
+                      currentRole === 'supervisor'
+                        ? 'bg-blue-600 text-white shadow-xs'
+                        : 'bg-gray-100 text-gray-700 hover:bg-blue-600 hover:text-white'
+                    }`}
+                  >
+                    {currentRole === 'supervisor' ? 'محدد حالياً ✓' : 'تعيين كمشرف'}
+                  </button>
+                </div>
+
+                {/* Option 2: Admin (مشرف عام / مدير) */}
+                <div 
+                  onClick={() => !isUpdatingRole && handleRoleChange('admin')}
+                  className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex items-start justify-between gap-3 ${
+                    currentRole === 'admin' 
+                      ? 'border-amber-500 bg-amber-50/70 shadow-xs' 
+                      : 'border-gray-200 hover:border-amber-300 hover:bg-gray-50'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="p-2.5 bg-amber-100 text-amber-700 rounded-xl mt-0.5">
+                      <Crown className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-sm font-black text-gray-900">مشرف عام / مدير النظام (Admin)</h4>
+                        {currentRole === 'admin' && (
+                          <span className="text-[10px] bg-amber-600 text-white font-bold px-2 py-0.5 rounded-full">الرتبة الحالية</span>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        أعلى صلاحية في الموقع: إدارة كاملة لكل المنتجات والأقسام، بالإضافة إلى تعيين وتعديل صلاحيات باقي المشرفين والأعضاء.
+                      </p>
+                    </div>
+                  </div>
+                  <button 
+                    disabled={isUpdatingRole}
+                    className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all ${
+                      currentRole === 'admin'
+                        ? 'bg-amber-600 text-white shadow-xs'
+                        : 'bg-gray-100 text-gray-700 hover:bg-amber-600 hover:text-white'
+                    }`}
+                  >
+                    {currentRole === 'admin' ? 'محدد حالياً ✓' : 'تعيين كمدير عام'}
+                  </button>
+                </div>
+
+                {/* Option 3: Regular User (مستخدم عادي) */}
+                <div 
+                  onClick={() => !isUpdatingRole && handleRoleChange('user')}
+                  className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex items-start justify-between gap-3 ${
+                    currentRole === 'user' || currentRole === 'member'
+                      ? 'border-emerald-600 bg-emerald-50/70 shadow-xs' 
+                      : 'border-gray-200 hover:border-emerald-300 hover:bg-gray-50'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="p-2.5 bg-emerald-100 text-emerald-700 rounded-xl mt-0.5">
+                      <UserCheck className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-sm font-black text-gray-900">مستخدم عادي / عضو (Member)</h4>
+                        {(currentRole === 'user' || currentRole === 'member') && (
+                          <span className="text-[10px] bg-emerald-600 text-white font-bold px-2 py-0.5 rounded-full">الرتبة الحالية</span>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        مستخدم مسجل: يمكنه استعراض المنتجات وتحديد النواقص والملاحظات، دون صلاحيات حذف منتجات المشرفين.
+                      </p>
+                    </div>
+                  </div>
+                  <button 
+                    disabled={isUpdatingRole}
+                    className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all ${
+                      currentRole === 'user' || currentRole === 'member'
+                        ? 'bg-emerald-600 text-white shadow-xs'
+                        : 'bg-gray-100 text-gray-700 hover:bg-emerald-600 hover:text-white'
+                    }`}
+                  >
+                    {(currentRole === 'user' || currentRole === 'member') ? 'محدد حالياً ✓' : 'تحويل لعضو'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Modal Footer */}
@@ -180,3 +392,4 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
     </div>
   );
 };
+

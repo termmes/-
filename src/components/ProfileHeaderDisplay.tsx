@@ -1,6 +1,13 @@
 import React from 'react';
 import { ProfileCustomization } from '../types';
-import { BANNER_THEMES, AVATAR_FRAMES, AVATAR_SHAPES, PROFILE_BADGES } from '../profileThemes';
+import { 
+  BANNER_THEMES, 
+  AVATAR_FRAMES, 
+  AVATAR_SHAPES, 
+  AVATAR_ROTATE_ANIMATIONS,
+  AVATAR_FILTERS,
+  AVATAR_ZOOM_OPTIONS
+} from '../profileThemes';
 import { CheckCircle2, Sparkles } from 'lucide-react';
 
 interface ProfileHeaderDisplayProps {
@@ -38,10 +45,21 @@ export const ProfileHeaderDisplay: React.FC<ProfileHeaderDisplayProps> = ({
 
   // Resolve Avatar Shape
   const shapeId = customization?.avatarShape || 'circle';
-  const matchedShape = AVATAR_SHAPES.find(s => s.id === shapeId) || AVATAR_SHAPES[0];
 
   // Resolve Animated Effect
   const effectId = customization?.animatedEffect || matchedTheme.effect || 'none';
+
+  // Resolve Avatar Rotation Animation
+  const rotateId = customization?.avatarRotateAnimation || 'none';
+  const matchedRotate = AVATAR_ROTATE_ANIMATIONS.find(r => r.id === rotateId) || AVATAR_ROTATE_ANIMATIONS[0];
+
+  // Resolve Avatar Filter
+  const filterId = customization?.avatarFilter || 'none';
+  const matchedFilter = AVATAR_FILTERS.find(f => f.id === filterId) || AVATAR_FILTERS[0];
+
+  // Resolve Avatar Zoom & Tilt
+  const zoomId = customization?.avatarZoom || 'normal';
+  const matchedZoom = AVATAR_ZOOM_OPTIONS.find(z => z.id === zoomId) || AVATAR_ZOOM_OPTIONS[0];
 
   // Resolve Badge
   const badgeTitle = customization?.badgeTitle || 'عضو معتمد';
@@ -93,7 +111,7 @@ export const ProfileHeaderDisplay: React.FC<ProfileHeaderDisplayProps> = ({
       {/* 1. Custom Background Image if specified */}
       {customBannerUrl && (
         <div 
-          className="absolute inset-0 bg-cover bg-center z-0 opacity-40 mix-blend-overlay"
+          className="absolute inset-0 bg-cover bg-center z-0 opacity-45 mix-blend-overlay"
           style={{ backgroundImage: `url(${customBannerUrl})` }}
         />
       )}
@@ -103,7 +121,15 @@ export const ProfileHeaderDisplay: React.FC<ProfileHeaderDisplayProps> = ({
         
         {/* Effect: Cyber Grid 3D */}
         {effectId === 'cyber-grid' && (
-          <div className="absolute inset-0 opacity-30 animate-cyber-grid" />
+          <div className="absolute inset-0 opacity-35 animate-cyber-grid" />
+        )}
+
+        {/* Effect: Synthwave Sun & Grid */}
+        {effectId === 'synthwave-sun' && (
+          <div className="absolute inset-0">
+            <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 rounded-full bg-gradient-to-t from-pink-500 via-amber-400 to-yellow-300 opacity-60 blur-xs" />
+            <div className="absolute inset-0 opacity-40 animate-synthwave-grid" />
+          </div>
         )}
 
         {/* Effect: Floating Stars & Nebula */}
@@ -117,6 +143,16 @@ export const ProfileHeaderDisplay: React.FC<ProfileHeaderDisplayProps> = ({
           </div>
         )}
 
+        {/* Effect: Hyperspace Warp Speed */}
+        {effectId === 'warp-speed' && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="absolute w-1 h-1 bg-cyan-300 rounded-full animate-warp-star shadow-[0_0_10px_cyan]" />
+            <div className="absolute w-1.5 h-1.5 bg-white rounded-full animate-warp-star delay-300 shadow-[0_0_12px_white]" />
+            <div className="absolute w-2 h-2 bg-blue-400 rounded-full animate-warp-star delay-700 shadow-[0_0_14px_blue]" />
+            <div className="absolute w-1 h-1 bg-sky-200 rounded-full animate-warp-star delay-500 shadow-[0_0_10px_sky]" />
+          </div>
+        )}
+
         {/* Effect: Rising Fire Sparks & Embers */}
         {effectId === 'sparks' && (
           <div className="absolute inset-0">
@@ -127,9 +163,49 @@ export const ProfileHeaderDisplay: React.FC<ProfileHeaderDisplayProps> = ({
           </div>
         )}
 
+        {/* Effect: Inferno Fire Tempest */}
+        {effectId === 'fire-tempest' && (
+          <div className="absolute inset-0">
+            <div className="absolute bottom-0 left-1/10 w-3 h-3 bg-red-600 rounded-full animate-rise-spark shadow-[0_0_14px_#dc2626]" />
+            <div className="absolute bottom-0 left-3/10 w-2 h-2 bg-amber-400 rounded-full animate-rise-spark delay-200 shadow-[0_0_10px_#f59e0b]" />
+            <div className="absolute bottom-0 left-5/10 w-3.5 h-3.5 bg-orange-500 rounded-full animate-rise-spark delay-500 shadow-[0_0_16px_#f97316]" />
+            <div className="absolute bottom-0 left-7/10 w-2.5 h-2.5 bg-yellow-300 rounded-full animate-rise-spark delay-700 shadow-[0_0_12px_#fde047]" />
+            <div className="absolute bottom-0 left-9/10 w-2 h-2 bg-rose-500 rounded-full animate-rise-spark delay-900 shadow-[0_0_10px_#f43f5e]" />
+          </div>
+        )}
+
+        {/* Effect: Electric Lightning Storm */}
+        {effectId === 'electric-lightning' && (
+          <div className="absolute inset-0 animate-lightning bg-cyan-400/20 mix-blend-screen">
+            <div className="absolute top-1/3 left-1/4 w-3/4 h-[2px] bg-cyan-200 shadow-[0_0_15px_#22d3ee] rotate-12" />
+            <div className="absolute top-2/3 right-1/4 w-1/2 h-[2px] bg-white shadow-[0_0_15px_white] -rotate-6" />
+          </div>
+        )}
+
+        {/* Effect: Floating Mythic Runes */}
+        {effectId === 'floating-runes' && (
+          <div className="absolute inset-0 select-none font-bold text-xs text-emerald-300/60 flex justify-around items-center">
+            <div className="animate-floating-rune">ᚱ</div>
+            <div className="animate-floating-rune delay-300 text-teal-300/70">ᚷ</div>
+            <div className="animate-floating-rune delay-700 text-emerald-400/80">ᚦ</div>
+            <div className="animate-floating-rune delay-500">ᛗ</div>
+            <div className="animate-floating-rune delay-1000 text-teal-200/60">ᛟ</div>
+          </div>
+        )}
+
+        {/* Effect: Golden Victory Confetti */}
+        {effectId === 'golden-confetti' && (
+          <div className="absolute inset-0">
+            <div className="absolute top-0 left-1/6 w-2.5 h-1.5 bg-yellow-300 rounded-xs animate-confetti shadow-[0_0_6px_#fde047]" />
+            <div className="absolute top-0 left-2/5 w-3 h-2 bg-amber-400 rounded-xs animate-confetti delay-500 shadow-[0_0_8px_#f59e0b]" />
+            <div className="absolute top-0 left-3/5 w-2 h-2 bg-yellow-100 rounded-xs animate-confetti delay-900 shadow-[0_0_6px_white]" />
+            <div className="absolute top-0 left-4/5 w-3.5 h-2 bg-amber-500 rounded-xs animate-confetti delay-300 shadow-[0_0_8px_#d97706]" />
+          </div>
+        )}
+
         {/* Effect: Matrix Digital Rain */}
         {effectId === 'matrix' && (
-          <div className="absolute inset-0 flex justify-around opacity-40 font-mono text-[10px] text-emerald-400 leading-tight select-none">
+          <div className="absolute inset-0 flex justify-around opacity-45 font-mono text-[10px] text-emerald-400 leading-tight select-none">
             <div className="animate-matrix-stream">0110<br/>1001<br/>1101</div>
             <div className="animate-matrix-stream delay-300">1010<br/>0101<br/>1110</div>
             <div className="animate-matrix-stream delay-700">0011<br/>1100<br/>0111</div>
@@ -160,19 +236,27 @@ export const ProfileHeaderDisplay: React.FC<ProfileHeaderDisplayProps> = ({
           </div>
         )}
 
+        {/* Effect: Cyber Scanlines */}
+        {effectId === 'cyber-scanlines' && (
+          <div className="absolute inset-0 opacity-40 pointer-events-none">
+            <div className="w-full h-1 bg-gradient-to-r from-transparent via-cyan-400/80 to-transparent animate-scanline" />
+            <div className="absolute inset-0 bg-[repeating-linear-gradient(0deg,transparent,transparent_2px,rgba(0,0,0,0.3)_3px,rgba(0,0,0,0.3)_4px)]" />
+          </div>
+        )}
+
       </div>
 
       {/* 3. Header Content Container */}
       <div className="relative z-10 flex flex-col sm:flex-row items-center sm:items-start gap-4">
         
-        {/* Avatar with Customized Ring & Shape */}
+        {/* Avatar with Customized Ring, Shape, Rotation Animation, and Filter */}
         <div className="relative shrink-0 group">
-          <div className={`transition-all duration-300 flex items-center justify-center ${matchedFrame.frameClass} ${getOuterShapeClass()}`}>
+          <div className={`transition-all duration-300 flex items-center justify-center ${matchedFrame.frameClass} ${getOuterShapeClass()} ${matchedRotate.animationClass}`}>
             <div className={`${avatarSizeClass} overflow-hidden bg-black/40 ${getShapeClass()} flex items-center justify-center`}>
               <img
                 src={photoUrl || 'https://www.gravatar.com/avatar/?d=mp'}
                 alt={displayName}
-                className={`w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 ${shapeId === 'diamond' ? '-rotate-45 scale-125' : ''}`}
+                className={`w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 ${matchedFilter.filterClass} ${matchedZoom.zoomClass} ${shapeId === 'diamond' ? '-rotate-45 scale-125' : ''}`}
                 onError={(e) => { (e.target as HTMLImageElement).src = 'https://www.gravatar.com/avatar/?d=mp'; }}
               />
             </div>

@@ -23,7 +23,17 @@ import {
   Package,
   Layers,
   Search,
-  Filter
+  Filter,
+  Table,
+  FileText,
+  Send,
+  TrendingUp,
+  SlidersHorizontal,
+  Scroll,
+  ShoppingBag,
+  Coffee,
+  Store,
+  ChevronDown
 } from 'lucide-react';
 import { auth, db, signInWithGoogle, logOut } from './firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
@@ -43,6 +53,9 @@ import { NeededAndRequiredView } from './components/NeededAndRequiredView';
 import { ProductCard } from './components/ProductCard';
 import { CommunityView } from './components/CommunityView';
 import { ProfileView } from './components/ProfileView';
+import { SupermarketStatsSummary } from './components/SupermarketStatsSummary';
+import { QuickInventoryTable } from './components/QuickInventoryTable';
+import { SupplierOrderModal } from './components/SupplierOrderModal';
 
 enum OperationType {
   CREATE = 'create',
@@ -129,9 +142,16 @@ export default function App() {
   const [products, setProducts] = useState<Product[]>([]);
   const [remindersCount, setRemindersCount] = useState<number>(0);
   
-  // Navigation State
+  // Navigation & View Mode State
   const [currentPage, setCurrentPage] = useState<PageCategory | 'all'>('refrigerator');
-  const [activeTab, setActiveTab] = useState<'catalog' | 'community' | 'profile' | 'outOfStock'>('catalog');
+  const [activeTab, setActiveTab] = useState<'catalog' | 'community' | 'profile' | 'outOfStock' | 'quickTable'>('catalog');
+  const [catalogViewMode, setCatalogViewMode] = useState<'grid' | 'table'>('grid');
+  
+  // Filters
+  const [priceFilter, setPriceFilter] = useState<'all' | '5' | '10' | 'other'>('all');
+  const [stockStatusFilter, setStockStatusFilter] = useState<'all' | 'in_stock' | 'out_of_stock'>('all');
+  const [showStatsOverview, setShowStatsOverview] = useState(true);
+  const [isSupplierOrderOpen, setIsSupplierOrderOpen] = useState(false);
   
   // Product creation form state
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
@@ -190,14 +210,19 @@ export default function App() {
       try {
         const userRef = doc(db, 'users', user.uid);
         const userSnap = await getDoc(userRef);
+        const shouldBeAdmin = user.email === 'kblox05@gmail.com';
         if (!userSnap.exists()) {
           const newProfile = {
             uid: user.uid,
             displayName: user.displayName || 'Anonymous User',
             photoUrl: user.photoURL || 'https://www.gravatar.com/avatar/?d=mp',
+            email: user.email || '',
+            role: shouldBeAdmin ? 'admin' : 'user',
             updatedAt: serverTimestamp()
           };
           await setDoc(userRef, newProfile);
+        } else if (shouldBeAdmin && userSnap.data()?.role !== 'admin') {
+          await updateDoc(userRef, { role: 'admin', updatedAt: serverTimestamp() });
         }
       } catch (error) {
         handleFirestoreError(error, OperationType.CREATE, `users/${user.uid}`);
@@ -408,27 +433,56 @@ export default function App() {
   const productCounts: Record<string, number> = {
     all: products.length,
     refrigerator: products.filter(p => p.category === 'refrigerator').length,
-    stands: products.filter(p => p.category === 'stands' || (!p.category && p.category !== 'refrigerator' && p.category !== 'indomie' && p.category !== 'cleaners')).length,
+    stands: products.filter(p => p.category === 'stands' || (!p.category && p.category !== 'refrigerator' && p.category !== 'indomie' && p.category !== 'cleaners' && p.category !== 'paper_tissues' && p.category !== 'grocery' && p.category !== 'spices_nuts')).length,
     indomie: products.filter(p => p.category === 'indomie').length,
-    cleaners: products.filter(p => p.category === 'cleaners').length
+    paper_tissues: products.filter(p => p.category === 'paper_tissues').length,
+    cleaners: products.filter(p => p.category === 'cleaners').length,
+    grocery: products.filter(p => p.category === 'grocery').length,
+    spices_nuts: products.filter(p => p.category === 'spices_nuts').length,
   };
 
-  // Filter products by active page & search query
+  // Filter products by active page, search query, price group, and stock status
   const displayedProducts = products.filter(product => {
     // Search filter
     if (searchQuery.trim()) {
       const matchName = product.name.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchVar = product.variations.some(v => v.name.toLowerCase().includes(searchQuery.toLowerCase()));
+      const matchVar = product.variations.some(v => v.name.toLowerCase().includes(searchQuery.toLowerCase()) || (v.barcode && v.barcode.includes(searchQuery.trim())));
       if (!matchName && !matchVar) return false;
     }
 
-    if (currentPage === 'all') return true;
-    if (currentPage === 'refrigerator') return product.category === 'refrigerator';
-    if (currentPage === 'indomie') return product.category === 'indomie';
-    if (currentPage === 'cleaners') return product.category === 'cleaners';
-    if (currentPage === 'stands') {
-      return product.category === 'stands' || (!product.category);
+    // Category filter
+    if (currentPage !== 'all') {
+      if (currentPage === 'stands') {
+        const isStands = product.category === 'stands' || (!product.category && product.category !== 'refrigerator' && product.category !== 'indomie' && product.category !== 'cleaners' && product.category !== 'paper_tissues' && product.category !== 'grocery' && product.category !== 'spices_nuts');
+        if (!isStands) return false;
+      } else if (product.category !== currentPage) {
+        return false;
+      }
     }
+
+    // Stock Status filter
+    if (stockStatusFilter === 'in_stock') {
+      const hasInStock = product.variations.length === 0 || product.variations.some(v => !v.isOutOfStock);
+      if (!hasInStock) return false;
+    } else if (stockStatusFilter === 'out_of_stock') {
+      const hasOutOfStock = product.variations.some(v => v.isOutOfStock);
+      if (!hasOutOfStock) return false;
+    }
+
+    // Price Group filter
+    if (priceFilter !== 'all') {
+      if (priceFilter === '5') {
+        const matches5 = product.variations.some(v => v.price === 5 || v.name.includes('5') || v.name.includes('٥'));
+        if (!matches5) return false;
+      } else if (priceFilter === '10') {
+        const matches10 = product.variations.some(v => v.price === 10 || v.name.includes('10') || v.name.includes('١٠'));
+        if (!matches10) return false;
+      } else if (priceFilter === 'other') {
+        const matchesOther = product.variations.some(v => (v.price && v.price !== 5 && v.price !== 10) || (!v.price && !v.name.includes('5') && !v.name.includes('10')));
+        if (!matchesOther) return false;
+      }
+    }
+
     return true;
   });
 
@@ -502,6 +556,9 @@ export default function App() {
   const activePageConfig = PAGES_CONFIG.find(p => p.id === currentPage) || PAGES_CONFIG[0];
   const ActivePageIcon = activePageConfig.icon;
 
+  const isAdmin = profile?.role === 'admin' || user.email === 'kblox05@gmail.com';
+  const isSupervisor = isAdmin || profile?.role === 'supervisor';
+
   return (
     <div className="min-h-screen bg-gray-50/70 text-gray-900 font-sans flex flex-col" dir="rtl">
       
@@ -509,14 +566,23 @@ export default function App() {
       <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-2xs">
         <div className="max-w-[2000px] mx-auto px-3 sm:px-6 lg:px-8 xl:px-12 h-16 sm:h-18 flex items-center justify-between gap-2 sm:gap-4">
           
-          {/* Logo & Main Title */}
-          <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
-            <div className="w-9 h-9 sm:w-11 sm:h-11 bg-blue-600 text-white rounded-xl sm:rounded-2xl flex items-center justify-center shadow-xs">
-              <Library className="w-5 h-5 sm:w-6 sm:h-6" />
+          {/* Logo & Supermarket Administrative Title */}
+          <div 
+            onClick={() => {
+              setCurrentPage('all');
+              setActiveTab('catalog');
+            }}
+            className="flex items-center gap-2.5 sm:gap-3 shrink-0 cursor-pointer"
+          >
+            <div className="w-9 h-9 sm:w-11 sm:h-11 bg-gradient-to-br from-blue-600 to-indigo-700 text-white rounded-xl sm:rounded-2xl flex items-center justify-center shadow-xs">
+              <Store className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
             <div className="flex flex-col">
-              <h1 className="text-base sm:text-xl font-black text-gray-900 leading-tight">مكتبه الهدى</h1>
-              <span className="text-[10px] sm:text-xs text-gray-400 hidden sm:block">إدارة الأقسام والنواقص والطلبيات</span>
+              <div className="flex items-center gap-1.5">
+                <h1 className="text-base sm:text-xl font-black text-gray-900 leading-tight">سوبر ماركت الهدى</h1>
+                <span className="bg-blue-100 text-blue-800 text-[10px] sm:text-xs font-black px-2 py-0.2 rounded-md">المركز الإداري</span>
+              </div>
+              <span className="text-[10px] sm:text-xs text-gray-400 hidden sm:block">إدارة المخزون، الأقسام، النواقص وطلبيات التوريد</span>
             </div>
           </div>
 
@@ -534,20 +600,75 @@ export default function App() {
           </div>
 
           {/* Right Header Controls */}
-          <div className="flex items-center gap-1.5 sm:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-2.5">
+            {/* Quick Supplier Order Button */}
+            <button
+              id="header-supplier-order-btn"
+              onClick={() => setIsSupplierOrderOpen(true)}
+              className="flex items-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all border border-emerald-200 shrink-0 min-h-[38px] cursor-pointer shadow-2xs"
+              title="كشف طلبيات التوريد للموزعين"
+            >
+              <Send className="w-4 h-4" />
+              <span className="hidden lg:inline">طلبيات التوريد</span>
+            </button>
+
+            {/* Quick Table View Mode Button */}
+            <button
+              id="header-quick-table-btn"
+              onClick={() => {
+                setActiveTab('catalog');
+                setCatalogViewMode(catalogViewMode === 'grid' ? 'table' : 'grid');
+              }}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all border shrink-0 min-h-[38px] cursor-pointer ${
+                catalogViewMode === 'table' && activeTab === 'catalog'
+                  ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
+                  : 'bg-gray-50 hover:bg-gray-100 text-gray-700 border-gray-200'
+              }`}
+              title={catalogViewMode === 'table' ? 'التبديل إلى عرض البطاقات' : 'التبديل إلى جدول الجرد السريع'}
+            >
+              {catalogViewMode === 'table' ? <LayoutGrid className="w-4 h-4" /> : <Table className="w-4 h-4" />}
+              <span className="hidden sm:inline">{catalogViewMode === 'table' ? 'عرض البطاقات' : 'جدول الجرد'}</span>
+            </button>
+
             {deferredPrompt && (
               <button
                 onClick={handleInstallClick}
-                className="flex items-center gap-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all border border-blue-200 shrink-0 min-h-[38px]"
+                className="flex items-center gap-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all border border-blue-200 shrink-0 min-h-[38px] cursor-pointer"
               >
                 <Download className="w-4 h-4" />
-                <span className="hidden sm:inline">تثبيت التطبيق</span>
+                <span className="hidden sm:inline">تثبيت</span>
               </button>
             )}
 
+            {/* Community / Registered Users Navigation Button next to profile */}
             <button 
+              id="header-community-btn"
+              onClick={() => setActiveTab('community')} 
+              className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all min-h-[40px] cursor-pointer ${
+                activeTab === 'community'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'bg-gray-100 hover:bg-gray-200/80 text-gray-700 border border-gray-200/80'
+              }`}
+              title="دليل المستخدمين والمشرفين"
+            >
+              <Users className={`w-4 h-4 sm:w-4.5 sm:h-4.5 ${activeTab === 'community' ? 'text-white' : 'text-blue-600'}`} />
+              <span className="hidden sm:inline">المستخدمين</span>
+              {isSupervisor && (
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${
+                  activeTab === 'community' ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-800'
+                }`}>
+                  {isAdmin ? '👑 مدير' : '🛡️ مشرف'}
+                </span>
+              )}
+            </button>
+
+            {/* Profile Button */}
+            <button 
+              id="header-profile-btn"
               onClick={() => setActiveTab('profile')} 
-              className="hidden md:flex items-center gap-2 hover:bg-gray-100 p-1.5 sm:p-2 rounded-xl transition-colors min-h-[40px]"
+              className={`flex items-center gap-2 p-1.5 sm:p-2 rounded-xl transition-colors min-h-[40px] cursor-pointer ${
+                activeTab === 'profile' ? 'bg-blue-50 border border-blue-200' : 'hover:bg-gray-100'
+              }`}
               title="الملف الشخصي"
             >
               <img 
@@ -555,12 +676,13 @@ export default function App() {
                 alt="Profile" 
                 className="w-8 h-8 sm:w-9 sm:h-9 rounded-full object-cover border border-gray-200" 
               />
-              <span className="text-xs sm:text-sm font-bold text-gray-700 max-w-[120px] truncate">{profile?.displayName || user.displayName}</span>
+              <span className="hidden md:inline text-xs sm:text-sm font-bold text-gray-700 max-w-[120px] truncate">{profile?.displayName || user.displayName}</span>
             </button>
 
             <button
+              id="header-logout-btn"
               onClick={logOut}
-              className="hidden md:flex items-center gap-1.5 text-xs sm:text-sm font-bold text-gray-500 hover:text-red-600 hover:bg-red-50 p-2 sm:p-2.5 rounded-xl transition-colors min-h-[40px]"
+              className="text-xs sm:text-sm font-bold text-gray-500 hover:text-red-600 hover:bg-red-50 p-2 sm:p-2.5 rounded-xl transition-colors min-h-[40px] cursor-pointer"
               title="تسجيل الخروج"
             >
               <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -603,7 +725,7 @@ export default function App() {
       </header>
 
       {/* Main Container - Fully Fluid & Ultra-Wide TV Ready */}
-      <main className="flex-1 max-w-[2000px] mx-auto w-full px-3 sm:px-6 lg:px-8 xl:px-12 py-4 sm:py-6 pb-28 md:pb-12">
+      <main className="flex-1 max-w-[2000px] mx-auto w-full px-3 sm:px-6 lg:px-8 xl:px-12 py-4 sm:py-6 pb-28 md:pb-12 space-y-6">
         
         {/* VIEW 1: NEEDED & REQUIRED NOTEBOOK PAGE (المطلوب والنواقص وإعادة الطلب) */}
         {currentPage === 'needed' && activeTab === 'catalog' && (
@@ -614,273 +736,431 @@ export default function App() {
           />
         )}
 
-        {/* VIEW 2: PRODUCT CATALOG PAGES (الثلاجة / الستاندات / إندومي / المنظفات / الكل) */}
+        {/* VIEW 2: PRODUCT CATALOG PAGES (المركز الإداري / الثلاجة / الستاندات / إندومي / المناديل / المنظفات / البقالة / العطارة) */}
         {currentPage !== 'needed' && (activeTab === 'catalog' || activeTab === 'outOfStock') && (
-          <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">
+          <div className="space-y-6">
             
-            {/* Left Column: Product Sections & Add Form */}
-            <div className={`flex-1 w-full space-y-6 ${activeTab === 'catalog' ? 'block' : 'hidden lg:block'}`}>
+            {/* Top Supermarket KPIs & Executive Stats Overview Banner */}
+            {showStatsOverview && (
+              <SupermarketStatsSummary 
+                products={products}
+                remindersCount={remindersCount}
+                onOpenSupplierOrders={() => setIsSupplierOrderOpen(true)}
+                onSelectCategory={(cat) => {
+                  setCurrentPage(cat);
+                  setActiveTab('catalog');
+                }}
+              />
+            )}
+
+            <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">
               
-              {/* Active Page Header Banner & Search */}
-              <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-200/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-3.5">
-                  <div className={`p-3 sm:p-3.5 rounded-2xl ${activePageConfig.bgColor} ${activePageConfig.color} shrink-0`}>
-                    <ActivePageIcon className="w-6 h-6 sm:w-8 sm:h-8" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h2 className="text-lg sm:text-2xl font-black text-gray-900">{activePageConfig.title}</h2>
-                      <span className="text-xs sm:text-sm bg-gray-100 text-gray-700 font-bold px-2.5 py-0.5 rounded-full">
-                        {displayedProducts.length} منتج
-                      </span>
+              {/* Left Column: Product Sections & Add Form */}
+              <div className={`flex-1 w-full space-y-6 ${activeTab === 'catalog' ? 'block' : 'hidden lg:block'}`}>
+                
+                {/* Active Page Header Banner, View Toggles & Search */}
+                <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-200/80 flex flex-col gap-4">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3.5">
+                      <div className={`p-3 sm:p-3.5 rounded-2xl ${activePageConfig.bgColor} ${activePageConfig.color} shrink-0`}>
+                        <ActivePageIcon className="w-6 h-6 sm:w-8 sm:h-8" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h2 className="text-lg sm:text-2xl font-black text-gray-900">{activePageConfig.title}</h2>
+                          <span className="text-xs sm:text-sm bg-gray-100 text-gray-700 font-bold px-2.5 py-0.5 rounded-full">
+                            {displayedProducts.length} منتج
+                          </span>
+                        </div>
+                        <p className="text-xs sm:text-sm text-gray-500 mt-0.5">{activePageConfig.subtitle}</p>
+                      </div>
                     </div>
-                    <p className="text-xs sm:text-sm text-gray-500 mt-0.5">{activePageConfig.subtitle}</p>
+
+                    {/* Quick Search */}
+                    <div className="relative w-full sm:w-72 lg:w-80">
+                      <input
+                        type="text"
+                        placeholder="بحث في الأصناف والباركود..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-8 pr-10 py-2.5 text-xs sm:text-sm bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                      />
+                      <Search className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 absolute right-3 top-3" />
+                      {searchQuery && (
+                        <button 
+                          onClick={() => setSearchQuery('')}
+                          className="absolute left-2.5 top-2.5 text-gray-400 hover:text-gray-600 p-1"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Administrative Control Bar: Price Filters, Stock Status & View Switcher */}
+                  <div className="pt-3 border-t border-gray-100 flex flex-wrap items-center justify-between gap-3 text-xs">
+                    
+                    {/* Filter Chips */}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-gray-500 font-bold flex items-center gap-1">
+                        <SlidersHorizontal className="w-3.5 h-3.5" /> الفلاتر:
+                      </span>
+
+                      {/* Stock Status Filter */}
+                      <div className="bg-gray-100 p-0.5 rounded-xl flex items-center gap-0.5 border border-gray-200">
+                        <button
+                          onClick={() => setStockStatusFilter('all')}
+                          className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
+                            stockStatusFilter === 'all' ? 'bg-white text-gray-900 shadow-2xs' : 'text-gray-600 hover:text-gray-900'
+                          }`}
+                        >
+                          الكل
+                        </button>
+                        <button
+                          onClick={() => setStockStatusFilter('in_stock')}
+                          className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
+                            stockStatusFilter === 'in_stock' ? 'bg-emerald-600 text-white shadow-2xs' : 'text-emerald-700 hover:text-emerald-900'
+                          }`}
+                        >
+                          المتوفر فقط
+                        </button>
+                        <button
+                          onClick={() => setStockStatusFilter('out_of_stock')}
+                          className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
+                            stockStatusFilter === 'out_of_stock' ? 'bg-red-600 text-white shadow-2xs' : 'text-red-700 hover:text-red-900'
+                          }`}
+                        >
+                          الناقص فقط
+                        </button>
+                      </div>
+
+                      {/* Price Group Filter */}
+                      <div className="bg-gray-100 p-0.5 rounded-xl flex items-center gap-0.5 border border-gray-200">
+                        <button
+                          onClick={() => setPriceFilter('all')}
+                          className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
+                            priceFilter === 'all' ? 'bg-white text-gray-900 shadow-2xs' : 'text-gray-600 hover:text-gray-900'
+                          }`}
+                        >
+                          كل الأسعار
+                        </button>
+                        <button
+                          onClick={() => setPriceFilter('5')}
+                          className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
+                            priceFilter === '5' ? 'bg-blue-600 text-white shadow-2xs' : 'text-blue-700 hover:text-blue-900'
+                          }`}
+                        >
+                          فئة 5 ج
+                        </button>
+                        <button
+                          onClick={() => setPriceFilter('10')}
+                          className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
+                            priceFilter === '10' ? 'bg-blue-600 text-white shadow-2xs' : 'text-blue-700 hover:text-blue-900'
+                          }`}
+                        >
+                          فئة 10 ج
+                        </button>
+                        <button
+                          onClick={() => setPriceFilter('other')}
+                          className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
+                            priceFilter === 'other' ? 'bg-blue-600 text-white shadow-2xs' : 'text-blue-700 hover:text-blue-900'
+                          }`}
+                        >
+                          فئات أخرى
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* View Switcher (Cards Grid vs Table) */}
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setIsSupplierOrderOpen(true)}
+                        className="flex items-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold px-3 py-1.5 rounded-xl border border-emerald-200 transition-colors"
+                      >
+                        <Send className="w-3.5 h-3.5" />
+                        <span>كشف طلبيات الموزعين</span>
+                      </button>
+
+                      <div className="bg-gray-100 p-0.5 rounded-xl flex items-center gap-0.5 border border-gray-200">
+                        <button
+                          onClick={() => setCatalogViewMode('grid')}
+                          className={`p-1.5 rounded-lg font-bold transition-all flex items-center gap-1 ${
+                            catalogViewMode === 'grid' ? 'bg-white text-blue-600 shadow-2xs' : 'text-gray-500 hover:text-gray-900'
+                          }`}
+                          title="عرض البطاقات"
+                        >
+                          <LayoutGrid className="w-4 h-4" />
+                          <span className="hidden sm:inline">بطاقات</span>
+                        </button>
+                        <button
+                          onClick={() => setCatalogViewMode('table')}
+                          className={`p-1.5 rounded-lg font-bold transition-all flex items-center gap-1 ${
+                            catalogViewMode === 'table' ? 'bg-white text-blue-600 shadow-2xs' : 'text-gray-500 hover:text-gray-900'
+                          }`}
+                          title="عرض جدول الجرد والمخزون"
+                        >
+                          <Table className="w-4 h-4" />
+                          <span className="hidden sm:inline">جدول الجرد</span>
+                        </button>
+                      </div>
+                    </div>
+
                   </div>
                 </div>
 
-                {/* Quick Search */}
-                <div className="relative w-full sm:w-72 lg:w-80">
-                  <input
-                    type="text"
-                    placeholder="بحث في المنتجات والأطعمة..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-8 pr-10 py-2.5 text-xs sm:text-sm bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-                  />
-                  <Search className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 absolute right-3 top-3" />
-                  {searchQuery && (
-                    <button 
-                      onClick={() => setSearchQuery('')}
-                      className="absolute left-2.5 top-2.5 text-gray-400 hover:text-gray-600 p-1"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
+                {/* Add Product Collapsible Section */}
+                <section className="bg-white rounded-2xl shadow-sm border border-blue-100 overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setIsAddProductOpen(!isAddProductOpen)}
+                    className="w-full p-4 sm:p-5 flex items-center justify-between hover:bg-blue-50/50 transition-colors text-right"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="p-2 bg-blue-50 text-blue-600 rounded-xl">
+                        <Plus className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform duration-200 ${isAddProductOpen ? 'rotate-45 text-red-500' : ''}`} />
+                      </div>
+                      <div>
+                        <h3 className="text-sm sm:text-base font-bold text-gray-900 flex items-center gap-2">
+                          <span>إضافة منتج جديد لقسم: <strong className="text-blue-600">{activePageConfig.title}</strong></span>
+                        </h3>
+                        <p className="text-[11px] sm:text-xs text-gray-400 mt-0.5">
+                          {isAddProductOpen ? 'اضغط لغلق نافذة الإضافة' : 'اضغط لفتح نموذج إضافة منتج وتصنيفه بالسوبرماركت'}
+                        </p>
+                      </div>
+                    </div>
+                    <span className={`text-xs font-bold px-3 py-1.5 rounded-xl border transition-all ${
+                      isAddProductOpen 
+                        ? 'bg-red-50 text-red-600 border-red-200' 
+                        : 'bg-blue-50 text-blue-700 border-blue-200'
+                    }`}>
+                      {isAddProductOpen ? 'إغلاق' : '+ إضافة صنف جديد'}
+                    </span>
+                  </button>
+                  
+                  {isAddProductOpen && (
+                    <div className="p-4 sm:p-6 pt-0 border-t border-blue-50">
+                      <form onSubmit={async (e) => {
+                        await handleAddProduct(e);
+                      }} className="flex flex-col gap-3 mt-4">
+                        <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+                          
+                          {/* Product Name Input */}
+                          <div className="md:col-span-5">
+                            <label className="block text-[11px] font-bold text-gray-600 mb-1">اسم الصنف أو المنتج الرئيسي:</label>
+                            <input
+                              type="text"
+                              placeholder="مثال: شيبسي عائلي، بيبسي، مناديل فاين، إندومي فراخ..."
+                              value={newProductName}
+                              onChange={(e) => setNewProductName(e.target.value)}
+                              className="w-full px-3.5 py-2.5 sm:py-3 bg-gray-50 border border-gray-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-xs sm:text-sm font-medium min-w-0"
+                              required
+                            />
+                          </div>
+
+                          {/* Category Selector */}
+                          <div className="md:col-span-3">
+                            <label className="block text-[11px] font-bold text-gray-600 mb-1">القسم أو الجناح:</label>
+                            <select
+                              value={newProductCategory}
+                              onChange={(e) => setNewProductCategory(e.target.value)}
+                              className="w-full px-3 py-2.5 sm:py-3 bg-gray-50 border border-gray-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none text-xs sm:text-sm font-bold text-gray-700 cursor-pointer"
+                            >
+                              <option value="refrigerator">❄️ الثلاجات والمشروبات</option>
+                              <option value="stands">🏷️ الستاندات والشبسي</option>
+                              <option value="indomie">🍜 إندومي ومعكرونة</option>
+                              <option value="paper_tissues">🧻 المناديل والورقيات</option>
+                              <option value="cleaners">🧼 المنظفات والعناية</option>
+                              <option value="grocery">🥫 البقالة والمعلبات</option>
+                              <option value="spices_nuts">🥜 العطارة والتسالي</option>
+                            </select>
+                          </div>
+
+                          {/* Image Upload Input */}
+                          <div className="md:col-span-4 relative flex flex-col justify-end min-w-0">
+                            <label className="block text-[11px] font-bold text-gray-600 mb-1">صورة المنتج (اختياري):</label>
+                            {newProductImage.startsWith('data:') ? (
+                              <div className="w-full flex items-center justify-between px-3 py-2.5 border border-blue-300 bg-blue-50 rounded-xl min-w-0">
+                                <span className="text-xs text-blue-700 font-bold truncate">تم اختيار الصورة ✓</span>
+                                <button 
+                                  type="button" 
+                                  onClick={() => {
+                                    setNewProductImage('');
+                                    if (fileInputRef.current) fileInputRef.current.value = '';
+                                  }} 
+                                  className="text-blue-500 hover:text-blue-700 p-1 shrink-0"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="relative">
+                                <input
+                                  type="url"
+                                  placeholder="رابط صورة أو ارفع ملف..."
+                                  value={newProductImage}
+                                  onChange={(e) => setNewProductImage(e.target.value)}
+                                  className="w-full pl-10 pr-3 py-2.5 sm:py-3 bg-gray-50 border border-gray-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none text-xs sm:text-sm min-w-0"
+                                />
+                                <button 
+                                  type="button" 
+                                  onClick={() => fileInputRef.current?.click()}
+                                  className="absolute left-1.5 top-1.5 p-2 text-gray-500 hover:text-blue-600 cursor-pointer bg-white border border-gray-200 rounded-lg transition-colors shrink-0 shadow-2xs min-h-[34px] min-w-[34px] flex items-center justify-center" 
+                                  title="رفع صورة من الجهاز"
+                                >
+                                  <ImagePlus className="w-4 h-4" />
+                                </button>
+                                <input 
+                                  type="file" 
+                                  accept="image/*" 
+                                  className="hidden" 
+                                  ref={fileInputRef}
+                                  onChange={handleImageUpload} 
+                                />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <button
+                          type="submit"
+                          className="w-full sm:w-auto self-end bg-blue-600 hover:bg-blue-700 text-white px-6 sm:px-8 py-2.5 sm:py-3 rounded-xl font-bold text-xs sm:text-sm transition-all shadow-sm active:scale-95 min-h-[44px] cursor-pointer"
+                        >
+                          حفظ الصنف في السوبر ماركت
+                        </button>
+                      </form>
+                    </div>
                   )}
-                </div>
+                </section>
+
+                {/* VIEW MODE A: Fast Table Inventory Management */}
+                {catalogViewMode === 'table' ? (
+                  <QuickInventoryTable 
+                    products={displayedProducts}
+                    isSupervisor={isSupervisor}
+                    onToggleStock={toggleOutOfStock}
+                    onAddVariation={handleAddVariation}
+                    onDeleteVariation={handleDeleteVariation}
+                    onDeleteProduct={handleDeleteProduct}
+                  />
+                ) : (
+                  /* VIEW MODE B: Responsive Product Cards Grid */
+                  <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-6">
+                    {displayedProducts.map(product => (
+                      <ProductCard 
+                        key={product.id} 
+                        product={product} 
+                        isOwner={product.ownerId === user.uid}
+                        isSupervisor={isSupervisor}
+                        onAddVariation={handleAddVariation}
+                        onToggleStock={toggleOutOfStock}
+                        onDeleteProduct={handleDeleteProduct}
+                        onDeleteVariation={handleDeleteVariation}
+                        onUpdateImage={handleUpdateProductImage}
+                        onChangeCategory={handleChangeProductCategory}
+                        onUpdateProduct={handleUpdateProductDetails}
+                        onRenameProduct={handleRenameProduct}
+                      />
+                    ))}
+                    
+                    {displayedProducts.length === 0 && (
+                      <div className="col-span-full py-16 text-center text-gray-500 bg-white rounded-2xl border border-dashed border-gray-300 p-6">
+                        <ActivePageIcon className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                        <h4 className="text-base sm:text-lg font-bold text-gray-700">لا توجد منتجات مطابقة في صفحة "{activePageConfig.title}"</h4>
+                        <p className="text-xs sm:text-sm text-gray-400 mt-1 max-w-sm mx-auto">
+                          أضف صنفك الأول من النموذج أعلاه أو غيّر الفلاتر والبحث في الأعلى.
+                        </p>
+                      </div>
+                    )}
+                  </section>
+                )}
               </div>
 
-              {/* Add Product Collapsible Section */}
-              <section className="bg-white rounded-2xl shadow-sm border border-blue-100 overflow-hidden">
-                <button
-                  type="button"
-                  onClick={() => setIsAddProductOpen(!isAddProductOpen)}
-                  className="w-full p-4 sm:p-5 flex items-center justify-between hover:bg-blue-50/50 transition-colors text-right"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <div className="p-2 bg-blue-50 text-blue-600 rounded-xl">
-                      <Plus className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform duration-200 ${isAddProductOpen ? 'rotate-45 text-red-500' : ''}`} />
+              {/* Right Column: Out of Stock List / Shortages */}
+              <div className={`w-full lg:w-80 xl:w-96 2xl:w-[420px] shrink-0 ${activeTab === 'outOfStock' ? 'block' : 'hidden lg:block'}`}>
+                <div className="bg-white rounded-2xl shadow-sm border border-red-100 overflow-hidden sticky top-24">
+                  <div className="bg-gradient-to-r from-red-600 to-rose-600 p-4 sm:p-5 text-white flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <AlertCircle className="w-5 h-5 sm:w-6 sm:h-6" />
+                      <h3 className="text-sm sm:text-base lg:text-lg font-extrabold">قائمة النواقص (Out of Stock)</h3>
                     </div>
-                    <div>
-                      <h3 className="text-sm sm:text-base font-bold text-gray-900 flex items-center gap-2">
-                        <span>إضافة منتج جديد لقسم: <strong className="text-blue-600">{activePageConfig.title}</strong></span>
-                      </h3>
-                      <p className="text-[11px] sm:text-xs text-gray-400 mt-0.5">
-                        {isAddProductOpen ? 'اضغط لغلق نافذة الإضافة' : 'اضغط لفتح نموذج إضافة منتج جديد'}
-                      </p>
-                    </div>
+                    <span className="bg-white/20 text-white text-xs sm:text-sm font-black px-2.5 py-0.5 rounded-full">
+                      {outOfStockItems.length} صنف
+                    </span>
                   </div>
-                  <span className={`text-xs font-bold px-3 py-1.5 rounded-xl border transition-all ${
-                    isAddProductOpen 
-                      ? 'bg-red-50 text-red-600 border-red-200' 
-                      : 'bg-blue-50 text-blue-700 border-blue-200'
-                  }`}>
-                    {isAddProductOpen ? 'إغلاق' : '+ إضافة منتج'}
-                  </span>
-                </button>
-                
-                {isAddProductOpen && (
-                  <div className="p-4 sm:p-6 pt-0 border-t border-blue-50">
-                    <form onSubmit={async (e) => {
-                      await handleAddProduct(e);
-                    }} className="flex flex-col gap-3 mt-4">
-                      <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+                  
+                  <div className="p-4 sm:p-5 space-y-4">
+                    {outOfStockItems.length > 0 ? (
+                      <>
+                        <textarea
+                          readOnly
+                          value={outOfStockItems.map((item, i) => `${i + 1}. ${item}`).join('\n')}
+                          className="w-full h-64 sm:h-80 p-3.5 bg-gray-50 border border-gray-200 rounded-xl text-xs sm:text-sm text-gray-800 font-medium leading-relaxed resize-none focus:outline-none"
+                        />
                         
-                        {/* Product Name Input */}
-                        <div className="md:col-span-5">
-                          <input
-                            type="text"
-                            placeholder="اسم المنتج (مثال: بيبسي، شيبسي فلفل، إندومي فراخ)..."
-                            value={newProductName}
-                            onChange={(e) => setNewProductName(e.target.value)}
-                            className="w-full px-3.5 py-2.5 sm:py-3 bg-gray-50 border border-gray-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-xs sm:text-sm font-medium min-w-0"
-                            required
-                          />
-                        </div>
-
-                        {/* Category Selector */}
-                        <div className="md:col-span-3">
-                          <select
-                            value={newProductCategory}
-                            onChange={(e) => setNewProductCategory(e.target.value)}
-                            className="w-full px-3 py-2.5 sm:py-3 bg-gray-50 border border-gray-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none text-xs sm:text-sm font-bold text-gray-700 cursor-pointer"
+                        <div className="flex flex-col gap-2.5">
+                          {/* Supplier Restock Modal Trigger */}
+                          <button
+                            type="button"
+                            onClick={() => setIsSupplierOrderOpen(true)}
+                            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white px-4 py-3 rounded-xl font-bold text-xs sm:text-sm transition-all active:scale-95 shadow-xs min-h-[44px] cursor-pointer"
                           >
-                            <option value="refrigerator">❄️ الثلاجة</option>
-                            <option value="stands">🏷️ الستاندات</option>
-                            <option value="indomie">🍜 إندومي</option>
-                            <option value="cleaners">🧼 المناديل والمنظفات</option>
-                          </select>
+                            <Send className="w-4 h-4 sm:w-5 sm:h-5" />
+                            تجهيز مسودة طلبية الموزعين
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCurrentPage('needed');
+                              setActiveTab('catalog');
+                            }}
+                            className="w-full flex items-center justify-center gap-2 bg-blue-50 hover:bg-blue-100 text-blue-700 px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all border border-blue-200 min-h-[42px] cursor-pointer"
+                          >
+                            <ClipboardList className="w-4 h-4" />
+                            دفتر المطلوب والنواقص
+                          </button>
+
+                          <button
+                            onClick={handleCopy}
+                            className="w-full flex items-center justify-center gap-2 bg-gray-900 hover:bg-gray-800 text-white px-4 py-3 rounded-xl font-bold text-xs sm:text-sm transition-all active:scale-95 shadow-xs min-h-[44px] cursor-pointer"
+                          >
+                            {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                            {copied ? 'تم نسخ النواقص للحافظة!' : 'نسخ قائمة النواقص'}
+                          </button>
+                          
+                          <button
+                            onClick={handleClearOutOfStock}
+                            disabled={isClearing}
+                            className="w-full flex items-center justify-center gap-2 bg-red-50 hover:bg-red-100 text-red-700 disabled:opacity-50 px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-colors border border-red-200 min-h-[42px] cursor-pointer"
+                          >
+                            <ListX className="w-4 h-4" />
+                            {isClearing ? 'جاري التصفير...' : 'تصفير كل النواقص (متوفر للجميع)'}
+                          </button>
                         </div>
-
-                        {/* Image Upload Input */}
-                        <div className="md:col-span-4 relative flex items-center min-w-0">
-                          {newProductImage.startsWith('data:') ? (
-                            <div className="w-full flex items-center justify-between px-3 py-2.5 border border-blue-300 bg-blue-50 rounded-xl min-w-0">
-                              <span className="text-xs text-blue-700 font-bold truncate">تم اختيار الصورة ✓</span>
-                              <button 
-                                type="button" 
-                                onClick={() => {
-                                  setNewProductImage('');
-                                  if (fileInputRef.current) fileInputRef.current.value = '';
-                                }} 
-                                className="text-blue-500 hover:text-blue-700 p-1 shrink-0"
-                              >
-                                <X className="w-4 h-4" />
-                              </button>
-                            </div>
-                          ) : (
-                            <>
-                              <input
-                                type="url"
-                                placeholder="رابط صورة (اختياري)"
-                                value={newProductImage}
-                                onChange={(e) => setNewProductImage(e.target.value)}
-                                className="w-full pl-10 pr-3 py-2.5 sm:py-3 bg-gray-50 border border-gray-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none text-xs sm:text-sm min-w-0"
-                              />
-                              <button 
-                                type="button" 
-                                onClick={() => fileInputRef.current?.click()}
-                                className="absolute left-1.5 p-2 text-gray-500 hover:text-blue-600 cursor-pointer bg-white border border-gray-200 rounded-lg transition-colors shrink-0 shadow-2xs min-h-[34px] min-w-[34px] flex items-center justify-center" 
-                                title="رفع صورة من الجهاز"
-                              >
-                                <ImagePlus className="w-4 h-4" />
-                              </button>
-                              <input 
-                                type="file" 
-                                accept="image/*" 
-                                className="hidden" 
-                                ref={fileInputRef}
-                                onChange={handleImageUpload} 
-                              />
-                            </>
-                          )}
+                      </>
+                    ) : (
+                      <div className="text-center py-12 text-gray-500">
+                        <div className="w-12 h-12 sm:w-14 sm:h-14 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-2.5">
+                          <Check className="w-6 h-6 sm:w-7 sm:h-7" />
                         </div>
+                        <p className="text-sm sm:text-base font-bold text-gray-700">جميع الأصناف متوفرة بالسوبرماركت</p>
+                        <p className="text-xs sm:text-sm text-gray-400 mt-1">عند تحويل أي صنف إلى "ناقص" سيظهر هنا فوراً.</p>
                       </div>
-
-                      <button
-                        type="submit"
-                        className="w-full sm:w-auto self-end bg-blue-600 hover:bg-blue-700 text-white px-6 sm:px-8 py-2.5 sm:py-3 rounded-xl font-bold text-xs sm:text-sm transition-all shadow-sm active:scale-95 min-h-[44px]"
-                      >
-                        حفظ وإضافة المنتج
-                      </button>
-                    </form>
+                    )}
                   </div>
-                )}
-              </section>
-
-              {/* Product Grid - Responsive on Mobile, Tablets, Desktops and 4K TVs */}
-              <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-6">
-                {displayedProducts.map(product => (
-                  <ProductCard 
-                    key={product.id} 
-                    product={product} 
-                    isOwner={product.ownerId === user.uid}
-                    onAddVariation={handleAddVariation}
-                    onToggleStock={toggleOutOfStock}
-                    onDeleteProduct={handleDeleteProduct}
-                    onDeleteVariation={handleDeleteVariation}
-                    onUpdateImage={handleUpdateProductImage}
-                    onChangeCategory={handleChangeProductCategory}
-                    onUpdateProduct={handleUpdateProductDetails}
-                    onRenameProduct={handleRenameProduct}
-                  />
-                ))}
-                
-                {displayedProducts.length === 0 && (
-                  <div className="col-span-full py-16 text-center text-gray-500 bg-white rounded-2xl border border-dashed border-gray-300 p-6">
-                    <ActivePageIcon className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                    <h4 className="text-base sm:text-lg font-bold text-gray-700">لا توجد منتجات في صفحة "{activePageConfig.title}"</h4>
-                    <p className="text-xs sm:text-sm text-gray-400 mt-1 max-w-sm mx-auto">
-                      أضف منتجك الأول من النموذج أعلاه أو اختر قسماً آخر من القائمة في الأعلى.
-                    </p>
-                  </div>
-                )}
-              </section>
-            </div>
-
-            {/* Right Column: Out of Stock List / Shortages */}
-            <div className={`w-full lg:w-80 xl:w-96 2xl:w-[420px] shrink-0 ${activeTab === 'outOfStock' ? 'block' : 'hidden lg:block'}`}>
-              <div className="bg-white rounded-2xl shadow-sm border border-red-100 overflow-hidden sticky top-24">
-                <div className="bg-gradient-to-r from-red-600 to-rose-600 p-4 sm:p-5 text-white flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <AlertCircle className="w-5 h-5 sm:w-6 sm:h-6" />
-                    <h3 className="text-sm sm:text-base lg:text-lg font-extrabold">قائمة النواقص (Out of Stock)</h3>
-                  </div>
-                  <span className="bg-white/20 text-white text-xs sm:text-sm font-black px-2.5 py-0.5 rounded-full">
-                    {outOfStockItems.length} صنف
-                  </span>
-                </div>
-                
-                <div className="p-4 sm:p-5 space-y-4">
-                  {outOfStockItems.length > 0 ? (
-                    <>
-                      <textarea
-                        readOnly
-                        value={outOfStockItems.map((item, i) => `${i + 1}. ${item}`).join('\n')}
-                        className="w-full h-64 sm:h-80 p-3.5 bg-gray-50 border border-gray-200 rounded-xl text-xs sm:text-sm text-gray-800 font-medium leading-relaxed resize-none focus:outline-none"
-                      />
-                      
-                      <div className="flex flex-col gap-2.5">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setCurrentPage('needed');
-                            setActiveTab('catalog');
-                          }}
-                          className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-3 rounded-xl font-bold text-xs sm:text-sm transition-all active:scale-95 shadow-xs min-h-[44px]"
-                        >
-                          <ClipboardList className="w-4 h-4 sm:w-5 sm:h-5" />
-                          فتح صفحة النواقص وإعادة الطلب
-                        </button>
-
-                        <button
-                          onClick={handleCopy}
-                          className="w-full flex items-center justify-center gap-2 bg-gray-900 hover:bg-gray-800 text-white px-4 py-3 rounded-xl font-bold text-xs sm:text-sm transition-all active:scale-95 shadow-xs min-h-[44px]"
-                        >
-                          {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-                          {copied ? 'تم نسخ النواقص للحافظة!' : 'نسخ قائمة النواقص'}
-                        </button>
-                        
-                        <button
-                          onClick={handleClearOutOfStock}
-                          disabled={isClearing}
-                          className="w-full flex items-center justify-center gap-2 bg-red-50 hover:bg-red-100 text-red-700 disabled:opacity-50 px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-colors border border-red-200 min-h-[42px]"
-                        >
-                          <ListX className="w-4 h-4" />
-                          {isClearing ? 'جاري التصفير...' : 'تصفير كل النواقص (متوفر للجميع)'}
-                        </button>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="text-center py-12 text-gray-500">
-                      <div className="w-12 h-12 sm:w-14 sm:h-14 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-2.5">
-                        <Check className="w-6 h-6 sm:w-7 sm:h-7" />
-                      </div>
-                      <p className="text-sm sm:text-base font-bold text-gray-700">جميع الأصناف متوفرة بالمحل</p>
-                      <p className="text-xs sm:text-sm text-gray-400 mt-1">عند تحويل أي صنف إلى "ناقص" سيظهر هنا فوراً.</p>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* VIEW 3: COMMUNITY */}
+        {/* VIEW 3: COMMUNITY & STAFF DIRECTORY */}
         {activeTab === 'community' && (
           <CommunityView 
             currentUserId={user.uid} 
             currentUserProfile={profile} 
             products={products} 
+            isAdmin={isAdmin}
           />
         )}
         
@@ -896,13 +1176,20 @@ export default function App() {
 
       </main>
 
+      {/* Supplier Order Generator Modal */}
+      <SupplierOrderModal 
+        isOpen={isSupplierOrderOpen}
+        onClose={() => setIsSupplierOrderOpen(false)}
+        products={products}
+      />
+
       {/* Mobile Bottom Nav */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-200 flex items-center justify-around pb-[env(safe-area-inset-bottom,0.5rem)] z-50 shadow-lg">
         <button 
           onClick={() => setActiveTab('catalog')} 
           className={`flex flex-col items-center p-2.5 ${activeTab === 'catalog' && currentPage !== 'needed' ? 'text-blue-600 font-bold' : 'text-gray-400 font-medium'}`}
         >
-          <Library className="w-5 h-5" />
+          <Store className="w-5 h-5" />
           <span className="text-[10px] mt-1">الأقسام</span>
         </button>
 
@@ -921,15 +1208,7 @@ export default function App() {
           <span className="text-[10px] mt-1">النواقص</span>
         </button>
 
-        <button 
-          onClick={() => setActiveTab('community')} 
-          className={`flex flex-col items-center p-2.5 ${activeTab === 'community' ? 'text-blue-600 font-bold' : 'text-gray-400 font-medium'}`}
-        >
-          <Users className="w-5 h-5" />
-          <span className="text-[10px] mt-1">المستخدمين</span>
-        </button>
-
-        {/* المطلوب والنواقص - القائمة التي قبل الأخيرة */}
+        {/* المطلوب والنواقص */}
         <button 
           onClick={() => {
             setCurrentPage('needed');
@@ -946,6 +1225,22 @@ export default function App() {
             )}
           </div>
           <span className="text-[10px] mt-1">المطلوب</span>
+        </button>
+
+        <button 
+          onClick={() => setIsSupplierOrderOpen(true)} 
+          className="flex flex-col items-center p-2.5 text-emerald-600 font-bold"
+        >
+          <Send className="w-5 h-5" />
+          <span className="text-[10px] mt-1">الطلبيات</span>
+        </button>
+
+        <button 
+          onClick={() => setActiveTab('community')} 
+          className={`flex flex-col items-center p-2.5 ${activeTab === 'community' ? 'text-blue-600 font-bold' : 'text-gray-400 font-medium'}`}
+        >
+          <Users className="w-5 h-5" />
+          <span className="text-[10px] mt-1">المشرفين</span>
         </button>
 
         <button 

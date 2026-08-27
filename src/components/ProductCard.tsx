@@ -76,6 +76,7 @@ interface ProductCardProps {
   onUpdateProduct?: (productId: string, updates: { name: string; category: string; imageUrl: string; variations: Variation[] }) => Promise<void>;
   onRenameProduct?: (productId: string, newName: string) => Promise<void>;
   isOwner: boolean;
+  isSupervisor?: boolean;
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({
@@ -88,8 +89,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   onChangeCategory,
   onUpdateProduct,
   onRenameProduct,
-  isOwner
+  isOwner,
+  isSupervisor = false
 }) => {
+  const canManage = isOwner || isSupervisor;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [newVarNames, setNewVarNames] = useState<{ '5': string, '10': string, 'other': string }>({ '5': '', '10': '', 'other': '' });
   const [expandedGroups, setExpandedGroups] = useState<{ '5': boolean, '10': boolean, 'other': boolean }>({ '5': false, '10': false, 'other': false });
@@ -206,7 +209,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                     >
                       {variation.isOutOfStock ? 'ناقص (Out of Stock)' : 'متوفر (In Stock)'}
                     </button>
-                    {isOwner && (
+                    {canManage && (
                       <button
                         type="button"
                         onClick={() => onDeleteVariation(product.id, variation.id)}
@@ -277,7 +280,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           </div>
         )}
 
-        {isOwner && (
+        {canManage && (
           <div className="absolute top-3 right-3 flex gap-1.5 opacity-100 sm:opacity-90 sm:group-hover:opacity-100 transition-all">
             <button 
               type="button"
@@ -357,7 +360,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               <h3 className="text-base sm:text-lg lg:text-xl font-black text-gray-900 leading-tight truncate">
                 {product.name}
               </h3>
-              {isOwner && (
+              {canManage && (
                 <div className="flex items-center gap-1">
                   <button
                     type="button"
@@ -383,8 +386,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             </div>
           )}
 
-          {/* Change Category Dropdown for Owner */}
-          {isOwner && onChangeCategory && !isInlineEditingName && (
+          {/* Change Category Dropdown for Owner / Supervisor */}
+          {canManage && onChangeCategory && !isInlineEditingName && (
             <div className="relative shrink-0">
               <select
                 value={product.category || 'stands'}
@@ -392,10 +395,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                 className="text-xs font-bold bg-gray-50 border border-gray-200 rounded-xl px-2.5 py-1.5 text-gray-600 hover:bg-gray-100 outline-none cursor-pointer"
                 title="تغيير القسم / الصفحة"
               >
-                <option value="refrigerator">❄️ الثلاجة</option>
-                <option value="stands">🏷️ الستاندات</option>
-                <option value="indomie">🍜 إندومي</option>
-                <option value="cleaners">🧼 المنظفات</option>
+                <option value="refrigerator">❄️ الثلاجات والمشروبات</option>
+                <option value="stands">🏷️ الستاندات والسناكس</option>
+                <option value="indomie">🍜 إندومي ومعكرونة</option>
+                <option value="paper_tissues">🧻 المناديل والورقيات</option>
+                <option value="cleaners">🧼 المنظفات والعناية</option>
+                <option value="grocery">🥫 البقالة والمعلبات</option>
+                <option value="spices_nuts">🍬 العطارة والتسالي</option>
               </select>
             </div>
           )}

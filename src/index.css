@@ -54,8 +54,104 @@
   100% { transform: rotate(360deg); }
 }
 
+@keyframes spinReverse {
+  0% { transform: rotate(360deg); }
+  100% { transform: rotate(0deg); }
+}
+
+@keyframes spin3DFlip {
+  0% { transform: perspective(600px) rotateY(0deg); }
+  50% { transform: perspective(600px) rotateY(180deg); }
+  100% { transform: perspective(600px) rotateY(360deg); }
+}
+
+@keyframes pendulumWiggle {
+  0%, 100% { transform: rotate(-18deg); }
+  50% { transform: rotate(18deg); }
+}
+
+@keyframes gyroPulse {
+  0% { transform: rotate(0deg) scale(1); }
+  25% { transform: rotate(90deg) scale(1.08); }
+  50% { transform: rotate(180deg) scale(0.95); }
+  75% { transform: rotate(270deg) scale(1.06); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+
+@keyframes radarSweep {
+  0% { transform: rotate(0deg); }
+  60% { transform: rotate(260deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes bounceTilt {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-6px) rotate(-10deg); }
+  50% { transform: translateY(0) rotate(0deg); }
+  75% { transform: translateY(-6px) rotate(10deg); }
+}
+
+/* Avatar Rotation Animation Classes */
 .animate-spin-slow {
-  animation: spinSlow 5s linear infinite;
+  animation: spinSlow 6s linear infinite;
+}
+.animate-spin-smooth {
+  animation: spinSlow 3.5s linear infinite;
+}
+.animate-spin-slow-clock {
+  animation: spinSlow 12s linear infinite;
+}
+.animate-spin-reverse {
+  animation: spinReverse 3.5s linear infinite;
+}
+.animate-spin-3d-flip {
+  animation: spin3DFlip 5s ease-in-out infinite;
+  transform-style: preserve-3d;
+}
+.animate-spin-pendulum {
+  animation: pendulumWiggle 2.5s ease-in-out infinite;
+  transform-origin: 50% 0%;
+}
+.animate-spin-pulse-gyro {
+  animation: gyroPulse 4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+.animate-spin-radar {
+  animation: radarSweep 2.2s cubic-bezier(0.77, 0, 0.175, 1) infinite;
+}
+.animate-spin-bounce-tilt {
+  animation: bounceTilt 2.8s ease-in-out infinite;
+}
+.animate-spin-hover:hover {
+  animation: spinSlow 0.9s linear infinite;
+}
+
+/* Image Filter Classes */
+.filter-cyber-neon {
+  filter: contrast(125%) saturate(170%) brightness(105%) hue-rotate(15deg);
+}
+.filter-golden-warmth {
+  filter: sepia(35%) saturate(150%) contrast(110%) brightness(105%);
+}
+.filter-hologram-cyan {
+  filter: contrast(135%) hue-rotate(170deg) saturate(160%) brightness(110%);
+}
+.filter-vintage-retro {
+  filter: sepia(60%) contrast(115%) brightness(95%) saturate(125%);
+}
+.filter-matrix-glitch {
+  filter: contrast(140%) hue-rotate(85deg) saturate(210%) brightness(105%);
+}
+.filter-noir-contrast {
+  filter: grayscale(100%) contrast(160%) brightness(95%);
+}
+.filter-sakura-soft {
+  filter: saturate(135%) hue-rotate(320deg) brightness(108%) contrast(105%);
+}
+.filter-magma-flame {
+  filter: contrast(140%) saturate(190%) hue-rotate(345deg) brightness(105%);
+}
+.filter-cool-ice {
+  filter: hue-rotate(195deg) saturate(145%) contrast(120%) brightness(112%);
 }
 
 @keyframes floatStar {
@@ -137,6 +233,51 @@
 
 .animate-neon-bubble {
   animation: floatBubble 4s ease-in-out infinite;
+}
+
+/* New Background Animation Effects */
+@keyframes warpSpeed {
+  0% { transform: scale(0.2) translateY(0); opacity: 0; }
+  40% { opacity: 1; }
+  100% { transform: scale(3.5) translateY(120px); opacity: 0; }
+}
+.animate-warp-star {
+  animation: warpSpeed 1.8s cubic-bezier(0.1, 0.8, 0.3, 1) infinite;
+}
+
+@keyframes lightningFlash {
+  0%, 90%, 100% { opacity: 0; }
+  92% { opacity: 0.85; filter: brightness(2); }
+  94% { opacity: 0.1; }
+  96% { opacity: 0.95; filter: brightness(2.5); }
+}
+.animate-lightning {
+  animation: lightningFlash 4s infinite;
+}
+
+@keyframes floatRune {
+  0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.4; }
+  50% { transform: translateY(-14px) rotate(180deg); opacity: 0.9; }
+}
+.animate-floating-rune {
+  animation: floatRune 4.5s ease-in-out infinite;
+}
+
+@keyframes confettiFall {
+  0% { transform: translateY(-20px) rotate(0deg); opacity: 0; }
+  15% { opacity: 1; }
+  100% { transform: translateY(160px) rotate(720deg); opacity: 0; }
+}
+.animate-confetti {
+  animation: confettiFall 3.8s linear infinite;
+}
+
+@keyframes scanlineSweep {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(1000%); }
+}
+.animate-scanline {
+  animation: scanlineSweep 3.5s linear infinite;
 }
 
 /* Hexagon Clip Path */
