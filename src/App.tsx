@@ -56,6 +56,7 @@ import { ProfileView } from './components/ProfileView';
 import { SupermarketStatsSummary } from './components/SupermarketStatsSummary';
 import { QuickInventoryTable } from './components/QuickInventoryTable';
 import { SupplierOrderModal } from './components/SupplierOrderModal';
+import { AIImageGeneratorWidget } from './components/AIImageGeneratorWidget';
 import { formatOutOfStockItemText } from './utils';
 
 enum OperationType {
@@ -1037,15 +1038,24 @@ export default function App() {
                           <div className="md:col-span-4 relative flex flex-col justify-end min-w-0">
                             <label className="block text-[11px] font-bold text-gray-600 mb-1">صورة المنتج (اختياري):</label>
                             {newProductImage.startsWith('data:') ? (
-                              <div className="w-full flex items-center justify-between px-3 py-2.5 border border-blue-300 bg-blue-50 rounded-xl min-w-0">
-                                <span className="text-xs text-blue-700 font-bold truncate">تم اختيار الصورة ✓</span>
+                              <div className="w-full flex items-center justify-between px-3 py-2.5 border border-indigo-300 bg-indigo-50/70 rounded-xl min-w-0">
+                                <div className="flex items-center gap-2 truncate">
+                                  <img 
+                                    src={newProductImage} 
+                                    alt="معاينة" 
+                                    className="w-7 h-7 rounded-lg object-cover border border-indigo-200 shrink-0" 
+                                    referrerPolicy="no-referrer"
+                                  />
+                                  <span className="text-xs text-indigo-800 font-bold truncate">تم اختيار الصورة ✓</span>
+                                </div>
                                 <button 
                                   type="button" 
                                   onClick={() => {
                                     setNewProductImage('');
                                     if (fileInputRef.current) fileInputRef.current.value = '';
                                   }} 
-                                  className="text-blue-500 hover:text-blue-700 p-1 shrink-0"
+                                  className="text-indigo-500 hover:text-indigo-800 p-1 shrink-0 cursor-pointer"
+                                  title="إزالة الصورة"
                                 >
                                   <X className="w-4 h-4" />
                                 </button>
@@ -1054,7 +1064,7 @@ export default function App() {
                               <div className="relative">
                                 <input
                                   type="url"
-                                  placeholder="رابط صورة أو ارفع ملف..."
+                                  placeholder="رابط صورة أو ارفع ملف أو ولدها بالـ AI..."
                                   value={newProductImage}
                                   onChange={(e) => setNewProductImage(e.target.value)}
                                   className="w-full pl-10 pr-3 py-2.5 sm:py-3 bg-gray-50 border border-gray-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none text-xs sm:text-sm min-w-0"
@@ -1077,6 +1087,18 @@ export default function App() {
                               </div>
                             )}
                           </div>
+                        </div>
+
+                        {/* AI Image Generation Option with Prompt */}
+                        <div className="pt-1">
+                          <AIImageGeneratorWidget
+                            productName={newProductName}
+                            category={newProductCategory}
+                            currentImage={newProductImage}
+                            onImageGenerated={(generatedImgUrl) => {
+                              setNewProductImage(generatedImgUrl);
+                            }}
+                          />
                         </div>
 
                         <button
