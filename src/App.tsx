@@ -858,149 +858,106 @@ export default function App() {
               {/* Left Column: Product Sections & Add Form */}
               <div className={`flex-1 w-full space-y-6 ${activeTab === 'catalog' ? 'block' : 'hidden lg:block'}`}>
                 
-                {/* Active Page Header Banner, View Toggles & Search */}
-                <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-200/80 flex flex-col gap-4">
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <div className="flex items-center gap-3.5">
-                      <div className={`p-3 sm:p-3.5 rounded-2xl ${activePageConfig.bgColor} ${activePageConfig.color} shrink-0`}>
-                        <ActivePageIcon className="w-6 h-6 sm:w-8 sm:h-8" />
+                {/* Active Page Header, Search & Filters */}
+                <div className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-200/90 shadow-2xs space-y-4">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2.5 sm:p-3 rounded-xl ${activePageConfig.bgColor} ${activePageConfig.color} shrink-0`}>
+                        <ActivePageIcon className="w-5 h-5 sm:w-6 sm:h-6" />
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <h2 className="text-lg sm:text-2xl font-black text-gray-900">{activePageConfig.title}</h2>
-                          <span className="text-xs sm:text-sm bg-gray-100 text-gray-700 font-bold px-2.5 py-0.5 rounded-full">
+                          <h2 className="text-base sm:text-xl font-black text-gray-900">{activePageConfig.title}</h2>
+                          <span className="text-xs bg-gray-100 text-gray-700 font-bold px-2.5 py-0.5 rounded-full">
                             {displayedProducts.length} منتج
                           </span>
                         </div>
-                        <p className="text-xs sm:text-sm text-gray-500 mt-0.5">{activePageConfig.subtitle}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">{activePageConfig.subtitle}</p>
                       </div>
                     </div>
 
                     {/* Quick Search */}
-                    <div className="relative w-full sm:w-72 lg:w-80">
+                    <div className="relative w-full sm:w-72">
                       <input
                         type="text"
                         placeholder="بحث في الأصناف والباركود..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-8 pr-10 py-2.5 text-xs sm:text-sm bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                        className="w-full pl-8 pr-9 py-2 text-xs sm:text-sm bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                       />
-                      <Search className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 absolute right-3 top-3" />
+                      <Search className="w-4 h-4 text-gray-400 absolute right-3 top-2.5" />
                       {searchQuery && (
                         <button 
                           onClick={() => setSearchQuery('')}
-                          className="absolute left-2.5 top-2.5 text-gray-400 hover:text-gray-600 p-1"
+                          className="absolute left-2 top-2 text-gray-400 hover:text-gray-600 p-1"
                         >
-                          <X className="w-4 h-4" />
+                          <X className="w-3.5 h-3.5" />
                         </button>
                       )}
                     </div>
                   </div>
 
-                  {/* Administrative Control Bar: Price Filters, Stock Status & View Switcher */}
-                  <div className="pt-3 border-t border-gray-100 flex flex-wrap items-center justify-between gap-3 text-xs">
+                  {/* Filter Toolbar */}
+                  <div className="pt-3 border-t border-gray-100 flex flex-wrap items-center justify-between gap-2.5 text-xs">
                     
-                    {/* Filter Chips */}
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-gray-500 font-bold flex items-center gap-1">
-                        <SlidersHorizontal className="w-3.5 h-3.5" /> الفلاتر:
-                      </span>
-
-                      {/* Stock Status Filter */}
-                      <div className="bg-gray-100 p-0.5 rounded-xl flex items-center gap-0.5 border border-gray-200">
-                        <button
-                          onClick={() => setStockStatusFilter('all')}
-                          className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
-                            stockStatusFilter === 'all' ? 'bg-white text-gray-900 shadow-2xs' : 'text-gray-600 hover:text-gray-900'
-                          }`}
-                        >
-                          الكل
-                        </button>
-                        <button
-                          onClick={() => setStockStatusFilter('in_stock')}
-                          className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
-                            stockStatusFilter === 'in_stock' ? 'bg-emerald-600 text-white shadow-2xs' : 'text-emerald-700 hover:text-emerald-900'
-                          }`}
-                        >
-                          المتوفر فقط
-                        </button>
-                        <button
-                          onClick={() => setStockStatusFilter('out_of_stock')}
-                          className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
-                            stockStatusFilter === 'out_of_stock' ? 'bg-red-600 text-white shadow-2xs' : 'text-red-700 hover:text-red-900'
-                          }`}
-                        >
-                          الناقص فقط
-                        </button>
-                      </div>
-
-                      {/* Price Group Filter */}
-                      <div className="bg-gray-100 p-0.5 rounded-xl flex items-center gap-0.5 border border-gray-200">
-                        <button
-                          onClick={() => setPriceFilter('all')}
-                          className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
-                            priceFilter === 'all' ? 'bg-white text-gray-900 shadow-2xs' : 'text-gray-600 hover:text-gray-900'
-                          }`}
-                        >
-                          كل الأسعار
-                        </button>
-                        <button
-                          onClick={() => setPriceFilter('5')}
-                          className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
-                            priceFilter === '5' ? 'bg-blue-600 text-white shadow-2xs' : 'text-blue-700 hover:text-blue-900'
-                          }`}
-                        >
-                          فئة 5 ج
-                        </button>
-                        <button
-                          onClick={() => setPriceFilter('10')}
-                          className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
-                            priceFilter === '10' ? 'bg-blue-600 text-white shadow-2xs' : 'text-blue-700 hover:text-blue-900'
-                          }`}
-                        >
-                          فئة 10 ج
-                        </button>
-                        <button
-                          onClick={() => setPriceFilter('other')}
-                          className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
-                            priceFilter === 'other' ? 'bg-blue-600 text-white shadow-2xs' : 'text-blue-700 hover:text-blue-900'
-                          }`}
-                        >
-                          فئات أخرى
-                        </button>
-                      </div>
+                    {/* Status Filter */}
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <button
+                        onClick={() => setStockStatusFilter('all')}
+                        className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
+                          stockStatusFilter === 'all' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                      >
+                        الكل ({products.filter(p => currentPage === 'all' || p.category === currentPage).length})
+                      </button>
+                      <button
+                        onClick={() => setStockStatusFilter('in_stock')}
+                        className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
+                          stockStatusFilter === 'in_stock' ? 'bg-emerald-600 text-white' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                        }`}
+                      >
+                        المتوفر فقط
+                      </button>
+                      <button
+                        onClick={() => setStockStatusFilter('out_of_stock')}
+                        className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
+                          stockStatusFilter === 'out_of_stock' ? 'bg-red-600 text-white' : 'bg-rose-50 text-rose-700 hover:bg-rose-100'
+                        }`}
+                      >
+                        الناقص فقط
+                      </button>
                     </div>
 
-                    {/* View Switcher (Cards Grid vs Table) */}
+                    {/* View Controls & Restock Button */}
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => setIsSupplierOrderOpen(true)}
-                        className="flex items-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold px-3 py-1.5 rounded-xl border border-emerald-200 transition-colors"
+                        className="flex items-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold px-3 py-1.5 rounded-lg border border-emerald-200 transition-colors cursor-pointer"
                       >
                         <Send className="w-3.5 h-3.5" />
-                        <span>كشف طلبيات الموزعين</span>
+                        <span>طلبية الموزع</span>
                       </button>
 
-                      <div className="bg-gray-100 p-0.5 rounded-xl flex items-center gap-0.5 border border-gray-200">
+                      <div className="bg-gray-100 p-0.5 rounded-lg flex items-center gap-0.5 border border-gray-200">
                         <button
                           onClick={() => setCatalogViewMode('grid')}
-                          className={`p-1.5 rounded-lg font-bold transition-all flex items-center gap-1 ${
+                          className={`px-2.5 py-1 rounded-md font-bold transition-all flex items-center gap-1 cursor-pointer ${
                             catalogViewMode === 'grid' ? 'bg-white text-blue-600 shadow-2xs' : 'text-gray-500 hover:text-gray-900'
                           }`}
                           title="عرض البطاقات"
                         >
-                          <LayoutGrid className="w-4 h-4" />
-                          <span className="hidden sm:inline">بطاقات</span>
+                          <LayoutGrid className="w-3.5 h-3.5" />
+                          <span>بطاقات</span>
                         </button>
                         <button
                           onClick={() => setCatalogViewMode('table')}
-                          className={`p-1.5 rounded-lg font-bold transition-all flex items-center gap-1 ${
+                          className={`px-2.5 py-1 rounded-md font-bold transition-all flex items-center gap-1 cursor-pointer ${
                             catalogViewMode === 'table' ? 'bg-white text-blue-600 shadow-2xs' : 'text-gray-500 hover:text-gray-900'
                           }`}
-                          title="عرض جدول الجرد والمخزون"
+                          title="عرض جدول الجرد"
                         >
-                          <Table className="w-4 h-4" />
-                          <span className="hidden sm:inline">جدول الجرد</span>
+                          <Table className="w-3.5 h-3.5" />
+                          <span>جدول الجرد</span>
                         </button>
                       </div>
                     </div>

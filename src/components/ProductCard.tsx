@@ -95,7 +95,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const canManage = isOwner || isSupervisor;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [newVarNames, setNewVarNames] = useState<{ '5': string, '10': string, 'other': string }>({ '5': '', '10': '', 'other': '' });
-  const [expandedGroups, setExpandedGroups] = useState<{ '5': boolean, '10': boolean, 'other': boolean }>({ '5': false, '10': false, 'other': false });
+  const [expandedGroups, setExpandedGroups] = useState<{ '5': boolean, '10': boolean, 'other': boolean }>({
+    '5': product.variations.some(v => v.group === '5'),
+    '10': product.variations.some(v => v.group === '10'),
+    'other': product.variations.some(v => v.group === 'other' || !v.group) || product.variations.length === 0
+  });
   const [isUpdatingImage, setIsUpdatingImage] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isInlineEditingName, setIsInlineEditingName] = useState(false);
@@ -398,7 +402,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                 <option value="refrigerator">❄️ الثلاجات والمشروبات</option>
                 <option value="stands">🏷️ الستاندات والسناكس</option>
                 <option value="indomie">🍜 إندومي ومعكرونة</option>
-                <option value="paper_tissues">🧻 المناديل والورقيات</option>
+                <option value="paper_tissues">📚 المكتبة والدراسة</option>
                 <option value="cleaners">🧼 المنظفات والعناية</option>
                 <option value="grocery">🥫 البقالة والمعلبات</option>
                 <option value="spices_nuts">🍬 العطارة والتسالي</option>
