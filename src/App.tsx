@@ -35,7 +35,7 @@ import {
   Store,
   ChevronDown
 } from 'lucide-react';
-import { auth, db, signInWithGoogle, logOut } from './firebase';
+import { auth, db, signInWithGoogle, signInAsGuest, logOut } from './firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { 
   collection, 
@@ -168,6 +168,8 @@ export default function App() {
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: Event) => {
@@ -533,21 +535,81 @@ export default function App() {
   }
 
   if (!user) {
+    const handleGoogleLogin = async () => {
+      setIsLoggingIn(true);
+      setAuthError(null);
+      try {
+        await signInWithGoogle();
+      } catch (err: any) {
+        console.error("Google sign in failed:", err);
+        setAuthError(err?.message || 'تعذر تسجيل الدخول عبر Google. يمكنك الدخول المباشر بالزر أدناه.');
+      } finally {
+        setIsLoggingIn(false);
+      }
+    };
+
+    const handleGuestLogin = async () => {
+      setIsLoggingIn(true);
+      setAuthError(null);
+      try {
+        await signInAsGuest();
+      } catch (err: any) {
+        console.error("Guest sign in failed:", err);
+        setAuthError('حدث خطأ أثناء الدخول المباشر. يرجى المحاولة مرة أخرى.');
+      } finally {
+        setIsLoggingIn(false);
+      }
+    };
+
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 font-sans p-4" dir="rtl">
-        <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-200 text-center max-w-md w-full">
-          <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Library className="w-8 h-8" />
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-100 via-gray-50 to-blue-50/40 font-sans p-4" dir="rtl">
+        <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-lg border border-gray-200 text-center max-w-md w-full space-y-6">
+          <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-700 text-white rounded-2xl flex items-center justify-center mx-auto shadow-md">
+            <Store className="w-8 h-8" />
           </div>
-          <h1 className="text-2xl font-black text-gray-900 mb-2">مكتبه الهدى</h1>
-          <p className="text-gray-500 text-sm mb-8">سجل الدخول لإدارة أقسام المتجر، الأصناف، النواقص، ودفتر المطلوب.</p>
-          <button
-            onClick={signInWithGoogle}
-            className="w-full flex items-center justify-center gap-3 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3.5 rounded-2xl font-bold transition-all shadow-md active:scale-95"
-          >
-            <LogIn className="w-5 h-5" />
-            تسجيل الدخول عبر Google
-          </button>
+          
+          <div>
+            <div className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-800 text-xs font-black px-2.5 py-1 rounded-full mb-2 border border-blue-100">
+              <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
+              <span>المركز الإداري للسوبر ماركت</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-black text-gray-900 mb-1">سوبر ماركت الهدى</h1>
+            <p className="text-gray-500 text-xs sm:text-sm">
+              إدارة الأقسام، جرد المخزون، متابعة النواقص، وطلبيات التوريد الفورية.
+            </p>
+          </div>
+
+          {authError && (
+            <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs text-right font-medium">
+              {authError}
+            </div>
+          )}
+
+          <div className="space-y-3">
+            <button
+              onClick={handleGoogleLogin}
+              disabled={isLoggingIn}
+              className="w-full flex items-center justify-center gap-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-6 py-3.5 rounded-2xl font-bold transition-all shadow-md active:scale-95 cursor-pointer text-sm"
+            >
+              <LogIn className="w-5 h-5" />
+              <span>{isLoggingIn ? 'جاري التحقق...' : 'تسجيل الدخول بحساب Google (المشرف)'}</span>
+            </button>
+
+            <button
+              onClick={handleGuestLogin}
+              disabled={isLoggingIn}
+              className="w-full flex items-center justify-center gap-3 bg-gray-900 hover:bg-gray-800 disabled:opacity-50 text-white px-6 py-3.5 rounded-2xl font-bold transition-all shadow-sm active:scale-95 cursor-pointer text-sm"
+            >
+              <Store className="w-5 h-5 text-emerald-400" />
+              <span>الدخول المباشر إلى السوبر ماركت</span>
+            </button>
+          </div>
+
+          <div className="pt-2 border-t border-gray-100">
+            <p className="text-[11px] text-gray-400 leading-relaxed">
+              يمكنك فتح ومتابعة السوبر ماركت وتحديث النواقص والأسعار فوراً من أي جهاز أو هاتف.
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -746,8 +808,20 @@ export default function App() {
                 products={products}
                 remindersCount={remindersCount}
                 onOpenSupplierOrders={() => setIsSupplierOrderOpen(true)}
+                onSelectDepartment={(cat) => {
+                  setCurrentPage(cat);
+                  setActiveTab('catalog');
+                }}
                 onSelectCategory={(cat) => {
                   setCurrentPage(cat);
+                  setActiveTab('catalog');
+                }}
+                onFilterOutOfStock={() => {
+                  setStockStatusFilter('out_of_stock');
+                  setActiveTab('catalog');
+                }}
+                onOpenNeeded={() => {
+                  setCurrentPage('needed');
                   setActiveTab('catalog');
                 }}
               />

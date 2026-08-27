@@ -16,18 +16,27 @@ import {
 interface SupermarketStatsSummaryProps {
   products: Product[];
   remindersCount: number;
-  onSelectDepartment: (dept: PageCategory | 'all') => void;
-  onFilterOutOfStock: () => void;
-  onOpenNeeded: () => void;
+  onSelectDepartment?: (dept: PageCategory | 'all') => void;
+  onSelectCategory?: (dept: PageCategory | 'all') => void;
+  onFilterOutOfStock?: () => void;
+  onOpenNeeded?: () => void;
+  onOpenSupplierOrders?: () => void;
 }
 
 export const SupermarketStatsSummary: React.FC<SupermarketStatsSummaryProps> = ({
   products,
   remindersCount,
   onSelectDepartment,
+  onSelectCategory,
   onFilterOutOfStock,
-  onOpenNeeded
+  onOpenNeeded,
+  onOpenSupplierOrders
 }) => {
+  const handleSelectDept = (dept: PageCategory | 'all') => {
+    if (onSelectDepartment) onSelectDepartment(dept);
+    else if (onSelectCategory) onSelectCategory(dept);
+  };
+
   // Total variations calculation
   const totalVariations = products.reduce((acc, p) => acc + (p.variations?.length || 0), 0);
   
@@ -103,7 +112,7 @@ export const SupermarketStatsSummary: React.FC<SupermarketStatsSummaryProps> = (
 
         {/* 3. Out of Stock */}
         <div 
-          onClick={onFilterOutOfStock}
+          onClick={() => onFilterOutOfStock?.()}
           className={`p-3.5 sm:p-4 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between ${
             outOfStockCount > 0 
               ? 'bg-gradient-to-br from-rose-50/70 to-red-50/50 border-rose-200 hover:border-rose-300 shadow-2xs' 
@@ -131,7 +140,7 @@ export const SupermarketStatsSummary: React.FC<SupermarketStatsSummaryProps> = (
 
         {/* 4. Needed Notebook Items */}
         <div 
-          onClick={onOpenNeeded}
+          onClick={() => onOpenNeeded?.()}
           className="bg-gradient-to-br from-indigo-50/50 to-blue-50/30 p-3.5 sm:p-4 rounded-2xl border border-indigo-100 hover:border-indigo-200 transition-all cursor-pointer flex flex-col justify-between"
         >
           <div className="flex items-center justify-between">
@@ -169,7 +178,7 @@ export const SupermarketStatsSummary: React.FC<SupermarketStatsSummaryProps> = (
               <button
                 key={dept.id}
                 type="button"
-                onClick={() => onSelectDepartment(dept.id)}
+                onClick={() => handleSelectDept(dept.id)}
                 className="px-3 py-1.5 rounded-xl border border-gray-200 bg-gray-50/70 hover:bg-gray-100 text-right flex items-center gap-2 text-xs font-bold text-gray-700 whitespace-nowrap transition-colors cursor-pointer shrink-0"
               >
                 <Icon className={`w-3.5 h-3.5 ${dept.color}`} />

@@ -1,6 +1,6 @@
 {
-  "name": "مكتبه الهدى",
-  "short_name": "مكتبه الهدى",
+  "name": "سوبر ماركت الهدى - المركز الإداري",
+  "short_name": "سوبر ماركت الهدى",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
@@ -14,3 +14,4 @@
     }
   ]
 }
+
