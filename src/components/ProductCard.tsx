@@ -7,6 +7,7 @@ import {
   Trash2, 
   ChevronDown, 
   ChevronRight, 
+  ChevronLeft,
   Tag, 
   Snowflake, 
   LayoutGrid, 
@@ -96,10 +97,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const canManage = isOwner || isSupervisor;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [newVarNames, setNewVarNames] = useState<{ '5': string, '10': string, 'other': string }>({ '5': '', '10': '', 'other': '' });
+  // All groups are closed/collapsed by default when opening the site or reloading
   const [expandedGroups, setExpandedGroups] = useState<{ '5': boolean, '10': boolean, 'other': boolean }>({
-    '5': product.variations.some(v => v.group === '5'),
-    '10': product.variations.some(v => v.group === '10'),
-    'other': product.variations.some(v => v.group === 'other' || !v.group) || product.variations.length === 0
+    '5': false,
+    '10': false,
+    'other': false
   });
   const [isUpdatingImage, setIsUpdatingImage] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -162,25 +164,39 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       v.group === groupId || (!v.group && groupId === 'other')
     );
     const isExpanded = expandedGroups[groupId];
+    const outOfStockCount = groupVars.filter(v => v.isOutOfStock).length;
 
     return (
-      <div className="mb-3 last:mb-0 bg-gray-50/70 rounded-xl border border-gray-100 overflow-hidden">
+      <div className="mb-2.5 last:mb-0 bg-gray-50/70 hover:bg-gray-50/90 rounded-xl border border-gray-200/80 overflow-hidden transition-all">
         <button 
           type="button"
           onClick={() => setExpandedGroups(prev => ({ ...prev, [groupId]: !prev[groupId] }))}
-          className="w-full p-2.5 sm:p-3 flex items-center justify-between hover:bg-gray-100/60 transition-colors"
+          className="w-full p-2.5 sm:p-3 flex items-center justify-between hover:bg-gray-100/70 transition-colors cursor-pointer select-none"
+          title={isExpanded ? 'اضغط لطي وقفل القائمة' : 'اضغط لفتح قائمة الأصناف'}
         >
-          <div className="flex items-center gap-2">
-            {isExpanded ? <ChevronDown className="w-4 h-4 text-gray-500" /> : <ChevronRight className="w-4 h-4 text-gray-500" />}
-            <h4 className="text-xs sm:text-sm font-bold text-gray-800 flex items-center gap-1.5">
-              <div className={`w-2 h-2 rounded-full ${groupId === '5' ? 'bg-emerald-500' : groupId === '10' ? 'bg-blue-500' : 'bg-purple-500'}`}></div>
-              {title}
+          <div className="flex items-center gap-2 min-w-0">
+            {isExpanded ? (
+              <ChevronDown className="w-4 h-4 text-blue-600 shrink-0" />
+            ) : (
+              <ChevronLeft className="w-4 h-4 text-gray-400 shrink-0" />
+            )}
+            <h4 className="text-xs sm:text-sm font-bold text-gray-800 flex items-center gap-1.5 truncate">
+              <div className={`w-2 h-2 rounded-full shrink-0 ${groupId === '5' ? 'bg-emerald-500' : groupId === '10' ? 'bg-blue-500' : 'bg-purple-500'}`}></div>
+              <span>{title}</span>
             </h4>
-            <span className="text-[10px] text-gray-400 font-normal">({subtitle})</span>
+            <span className="text-[10px] text-gray-400 font-normal shrink-0">({subtitle})</span>
           </div>
-          <span className="text-xs font-bold text-gray-500 bg-white px-2 py-0.5 rounded-full border border-gray-200">
-            {groupVars.length}
-          </span>
+
+          <div className="flex items-center gap-1.5 shrink-0">
+            {outOfStockCount > 0 && (
+              <span className="text-[10px] font-black text-rose-700 bg-rose-100 border border-rose-200 px-1.5 py-0.5 rounded-md">
+                {outOfStockCount} ناقص
+              </span>
+            )}
+            <span className="text-xs font-bold text-gray-500 bg-white px-2 py-0.5 rounded-full border border-gray-200">
+              {groupVars.length}
+            </span>
+          </div>
         </button>
         
         {isExpanded && (
@@ -426,6 +442,19 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         </div>
         
         <div className="flex-1 flex flex-col gap-2">
+          {(expandedGroups['5'] || expandedGroups['10'] || expandedGroups['other']) && (
+            <div className="flex items-center justify-between px-1 text-[11px] text-gray-500 font-semibold mb-0.5">
+              <span>قوائم الأصناف:</span>
+              <button
+                type="button"
+                onClick={() => setExpandedGroups({ '5': false, '10': false, 'other': false })}
+                className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer font-bold"
+                title="إغلاق وطي جميع القوائم المفتوحة لهذا الصنف"
+              >
+                طي القوائم المفتوحة ✕
+              </button>
+            </div>
+          )}
           {renderGroup('5', 'فئة 5 جنيه', 'Price: 5')}
           {renderGroup('10', 'فئة 10 جنيه', 'Price: 10')}
           {renderGroup('other', 'فئات أخرى / أحجام متنوعة', 'Other')}
