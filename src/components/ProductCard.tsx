@@ -27,7 +27,7 @@ const CATEGORY_NAMES: Record<string, { label: string, color: string, icon: React
   cleaners: { label: 'المناديل والمنظفات', color: 'bg-indigo-50 text-indigo-700 border-indigo-200', icon: Sparkles },
 };
 
-const compressImage = (file: File, maxWidth: number, maxHeight: number, quality: number = 0.7): Promise<string> => {
+const compressImage = (file: File, maxWidth: number = 500, maxHeight: number = 500, quality: number = 0.65): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
@@ -81,7 +81,7 @@ interface ProductCardProps {
   isSupervisor?: boolean;
 }
 
-export const ProductCard: React.FC<ProductCardProps> = ({
+const ProductCardInner: React.FC<ProductCardProps> = ({
   product,
   onAddVariation,
   onToggleStock,
@@ -295,6 +295,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           src={product.imageUrl} 
           alt={product.name} 
           className="w-full h-full object-cover"
+          loading="lazy"
+          decoding="async"
           onError={(e) => {
             (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1604719312566-8912e9227c6a?auto=format&fit=crop&q=80&w=300&h=300';
           }}
@@ -480,3 +482,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     </div>
   );
 };
+
+export const ProductCard = React.memo<ProductCardProps>(
+  ProductCardInner,
+  (prev, next) => {
+    return (
+      prev.product === next.product &&
+      prev.isOwner === next.isOwner &&
+      prev.isSupervisor === next.isSupervisor
+    );
+  }
+);

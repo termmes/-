@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useDeferredValue } from 'react';
 import { Product, Variation, PageCategory } from '../types';
 import { PAGES_CONFIG } from './PageNavigation';
 import { 
@@ -10,14 +10,14 @@ import {
   Edit3, 
   Trash2, 
   Plus, 
-  ChevronRight,
-  ExternalLink,
-  Layers,
-  Sparkles,
-  Tag,
-  Eye,
-  SlidersHorizontal,
-  X
+  ChevronRight, 
+  ExternalLink, 
+  Layers, 
+  Sparkles, 
+  Tag, 
+  Eye, 
+  SlidersHorizontal, 
+  X 
 } from 'lucide-react';
 import { ProductSettingsModal } from './ProductSettingsModal';
 
@@ -53,38 +53,43 @@ export const QuickInventoryTable: React.FC<QuickInventoryTableProps> = ({
   const [quickAddName, setQuickAddName] = useState('');
   const [quickAddGroup, setQuickAddGroup] = useState<'5' | '10' | 'other'>('5');
 
-  // Filter products
-  const filteredProducts = products.filter(product => {
-    // Search query
-    if (search.trim()) {
-      const matchName = product.name.toLowerCase().includes(search.toLowerCase());
-      const matchVar = product.variations?.some(v => v.name.toLowerCase().includes(search.toLowerCase()));
-      if (!matchName && !matchVar) return false;
-    }
+  const deferredSearch = useDeferredValue(search);
 
-    // Department filter
-    if (selectedDept !== 'all') {
-      const pCat = product.category || 'stands';
-      if (pCat !== selectedDept) return false;
-    }
+  // Filter products (memoized)
+  const filteredProducts = useMemo(() => {
+    const term = deferredSearch.trim().toLowerCase();
+    return products.filter(product => {
+      // Search query
+      if (term) {
+        const matchName = product.name?.toLowerCase().includes(term);
+        const matchVar = product.variations?.some(v => v.name?.toLowerCase().includes(term));
+        if (!matchName && !matchVar) return false;
+      }
 
-    // Stock status filter
-    if (stockStatusFilter === 'out_of_stock') {
-      const hasOutOfStock = product.variations?.some(v => v.isOutOfStock);
-      if (!hasOutOfStock) return false;
-    } else if (stockStatusFilter === 'in_stock') {
-      const hasOutOfStock = product.variations?.some(v => v.isOutOfStock);
-      if (hasOutOfStock && product.variations?.every(v => v.isOutOfStock)) return false;
-    }
+      // Department filter
+      if (selectedDept !== 'all') {
+        const pCat = product.category || 'stands';
+        if (pCat !== selectedDept) return false;
+      }
 
-    // Price group filter
-    if (priceGroupFilter !== 'all') {
-      const hasGroup = product.variations?.some(v => (v.group || 'other') === priceGroupFilter);
-      if (!hasGroup) return false;
-    }
+      // Stock status filter
+      if (stockStatusFilter === 'out_of_stock') {
+        const hasOutOfStock = product.variations?.some(v => v.isOutOfStock);
+        if (!hasOutOfStock) return false;
+      } else if (stockStatusFilter === 'in_stock') {
+        const hasOutOfStock = product.variations?.some(v => v.isOutOfStock);
+        if (hasOutOfStock && product.variations?.every(v => v.isOutOfStock)) return false;
+      }
 
-    return true;
-  });
+      // Price group filter
+      if (priceGroupFilter !== 'all') {
+        const hasGroup = product.variations?.some(v => (v.group || 'other') === priceGroupFilter);
+        if (!hasGroup) return false;
+      }
+
+      return true;
+    });
+  }, [products, deferredSearch, selectedDept, stockStatusFilter, priceGroupFilter]);
 
   const handleQuickAddVariation = async (productId: string) => {
     if (!quickAddName.trim()) return;

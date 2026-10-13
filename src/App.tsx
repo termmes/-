@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback, useDeferredValue } from 'react';
 import { Product, Variation, UserProfile, PageCategory } from './types';
 import { 
   Plus, 
@@ -56,7 +56,6 @@ import { ProfileView } from './components/ProfileView';
 import { SupermarketStatsSummary } from './components/SupermarketStatsSummary';
 import { QuickInventoryTable } from './components/QuickInventoryTable';
 import { SupplierOrderModal } from './components/SupplierOrderModal';
-import { AIImageGeneratorWidget } from './components/AIImageGeneratorWidget';
 import { formatOutOfStockItemText } from './utils';
 
 enum OperationType {
@@ -94,11 +93,10 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
     operationType,
     path
   };
-  console.error('Firestore Error: ', JSON.stringify(errInfo));
-  throw new Error(JSON.stringify(errInfo));
+  console.warn('Firestore Warning/Notice: ', JSON.stringify(errInfo));
 }
 
-const compressImage = (file: File, maxWidth: number, maxHeight: number, quality: number = 0.7): Promise<string> => {
+const compressImage = (file: File, maxWidth: number = 500, maxHeight: number = 500, quality: number = 0.65): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
@@ -344,16 +342,16 @@ export default function App() {
     }
   };
 
-  const handleDeleteProduct = async (productId: string) => {
+  const handleDeleteProduct = useCallback(async (productId: string) => {
     if (!window.confirm('هل أنت متأكد من حذف هذا المنتج؟')) return;
     try {
       await deleteDoc(doc(db, 'products', productId));
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, `products/${productId}`);
     }
-  };
+  }, []);
 
-  const handleAddVariation = async (productId: string, variationName: string, group: '5' | '10' | 'other') => {
+  const handleAddVariation = useCallback(async (productId: string, variationName: string, group: '5' | '10' | 'other') => {
     if (!variationName.trim()) return;
     const product = products.find(p => p.id === productId);
     if (!product) return;
@@ -372,9 +370,9 @@ export default function App() {
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `products/${productId}`);
     }
-  };
+  }, [products]);
 
-  const handleDeleteVariation = async (productId: string, variationId: string) => {
+  const handleDeleteVariation = useCallback(async (productId: string, variationId: string) => {
     const product = products.find(p => p.id === productId);
     if (!product) return;
 
@@ -385,9 +383,9 @@ export default function App() {
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `products/${productId}`);
     }
-  };
+  }, [products]);
 
-  const handleUpdateProductImage = async (productId: string, newImageUrl: string) => {
+  const handleUpdateProductImage = useCallback(async (productId: string, newImageUrl: string) => {
     try {
       await updateDoc(doc(db, 'products', productId), {
         imageUrl: newImageUrl
@@ -395,9 +393,9 @@ export default function App() {
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `products/${productId}`);
     }
-  };
+  }, []);
 
-  const handleRenameProduct = async (productId: string, newName: string) => {
+  const handleRenameProduct = useCallback(async (productId: string, newName: string) => {
     if (!newName.trim()) return;
     try {
       await updateDoc(doc(db, 'products', productId), {
@@ -406,9 +404,9 @@ export default function App() {
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `products/${productId}`);
     }
-  };
+  }, []);
 
-  const handleUpdateProductDetails = async (
+  const handleUpdateProductDetails = useCallback(async (
     productId: string, 
     updates: { name: string; category: string; imageUrl: string; variations: Variation[] }
   ) => {
@@ -422,9 +420,9 @@ export default function App() {
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `products/${productId}`);
     }
-  };
+  }, []);
 
-  const handleChangeProductCategory = async (productId: string, newCategory: string) => {
+  const handleChangeProductCategory = useCallback(async (productId: string, newCategory: string) => {
     try {
       await updateDoc(doc(db, 'products', productId), {
         category: newCategory
@@ -432,9 +430,9 @@ export default function App() {
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `products/${productId}`);
     }
-  };
+  }, []);
 
-  const toggleOutOfStock = async (productId: string, variationId: string) => {
+  const toggleOutOfStock = useCallback(async (productId: string, variationId: string) => {
     const product = products.find(p => p.id === productId);
     if (!product) return;
 
@@ -447,73 +445,101 @@ export default function App() {
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `products/${productId}`);
     }
-  };
+  }, [products]);
 
-  // Product counts per category
-  const productCounts: Record<string, number> = {
-    all: products.length,
-    refrigerator: products.filter(p => p.category === 'refrigerator').length,
-    stands: products.filter(p => p.category === 'stands' || (!p.category && p.category !== 'refrigerator' && p.category !== 'indomie' && p.category !== 'cleaners' && p.category !== 'paper_tissues' && p.category !== 'grocery' && p.category !== 'spices_nuts')).length,
-    indomie: products.filter(p => p.category === 'indomie').length,
-    paper_tissues: products.filter(p => p.category === 'paper_tissues').length,
-    cleaners: products.filter(p => p.category === 'cleaners').length,
-    grocery: products.filter(p => p.category === 'grocery').length,
-    spices_nuts: products.filter(p => p.category === 'spices_nuts').length,
-  };
-
-  // Filter products by active page, search query, price group, and stock status
-  const displayedProducts = products.filter(product => {
-    // Search filter
-    if (searchQuery.trim()) {
-      const matchName = product.name.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchVar = product.variations.some(v => v.name.toLowerCase().includes(searchQuery.toLowerCase()) || (v.barcode && v.barcode.includes(searchQuery.trim())));
-      if (!matchName && !matchVar) return false;
+  // Product counts per category - optimized single-pass memoized count
+  const productCounts = useMemo<Record<string, number>>(() => {
+    const counts: Record<string, number> = {
+      all: products.length,
+      refrigerator: 0,
+      stands: 0,
+      indomie: 0,
+      paper_tissues: 0,
+      cleaners: 0,
+      grocery: 0,
+      spices_nuts: 0,
+    };
+    for (const p of products) {
+      const cat = p.category;
+      if (cat === 'refrigerator') counts.refrigerator++;
+      else if (cat === 'indomie') counts.indomie++;
+      else if (cat === 'paper_tissues') counts.paper_tissues++;
+      else if (cat === 'cleaners') counts.cleaners++;
+      else if (cat === 'grocery') counts.grocery++;
+      else if (cat === 'spices_nuts') counts.spices_nuts++;
+      else counts.stands++;
     }
+    return counts;
+  }, [products]);
 
-    // Category filter
-    if (currentPage !== 'all') {
-      if (currentPage === 'stands') {
-        const isStands = product.category === 'stands' || (!product.category && product.category !== 'refrigerator' && product.category !== 'indomie' && product.category !== 'cleaners' && product.category !== 'paper_tissues' && product.category !== 'grocery' && product.category !== 'spices_nuts');
-        if (!isStands) return false;
-      } else if (product.category !== currentPage) {
-        return false;
+  // Use deferred search query so typing stays buttery smooth
+  const deferredSearchQuery = useDeferredValue(searchQuery);
+
+  // Filter products by active page, search query, price group, and stock status (Memoized)
+  const displayedProducts = useMemo(() => {
+    const queryTerm = deferredSearchQuery.trim().toLowerCase();
+
+    return products.filter(product => {
+      // Search filter
+      if (queryTerm) {
+        const matchName = product.name?.toLowerCase().includes(queryTerm);
+        const matchVar = product.variations?.some(v => 
+          v.name?.toLowerCase().includes(queryTerm) || (v.barcode && v.barcode.includes(queryTerm))
+        );
+        if (!matchName && !matchVar) return false;
       }
-    }
 
-    // Stock Status filter
-    if (stockStatusFilter === 'in_stock') {
-      const hasInStock = product.variations.length === 0 || product.variations.some(v => !v.isOutOfStock);
-      if (!hasInStock) return false;
-    } else if (stockStatusFilter === 'out_of_stock') {
-      const hasOutOfStock = product.variations.some(v => v.isOutOfStock);
-      if (!hasOutOfStock) return false;
-    }
-
-    // Price Group filter
-    if (priceFilter !== 'all') {
-      if (priceFilter === '5') {
-        const matches5 = product.variations.some(v => v.price === 5 || v.name.includes('5') || v.name.includes('٥'));
-        if (!matches5) return false;
-      } else if (priceFilter === '10') {
-        const matches10 = product.variations.some(v => v.price === 10 || v.name.includes('10') || v.name.includes('١٠'));
-        if (!matches10) return false;
-      } else if (priceFilter === 'other') {
-        const matchesOther = product.variations.some(v => (v.price && v.price !== 5 && v.price !== 10) || (!v.price && !v.name.includes('5') && !v.name.includes('10')));
-        if (!matchesOther) return false;
+      // Category filter
+      if (currentPage !== 'all') {
+        if (currentPage === 'stands') {
+          const isStands = product.category === 'stands' || (!product.category && product.category !== 'refrigerator' && product.category !== 'indomie' && product.category !== 'cleaners' && product.category !== 'paper_tissues' && product.category !== 'grocery' && product.category !== 'spices_nuts');
+          if (!isStands) return false;
+        } else if (product.category !== currentPage) {
+          return false;
+        }
       }
-    }
 
-    return true;
-  });
+      // Stock Status filter
+      if (stockStatusFilter === 'in_stock') {
+        const hasInStock = !product.variations || product.variations.length === 0 || product.variations.some(v => !v.isOutOfStock);
+        if (!hasInStock) return false;
+      } else if (stockStatusFilter === 'out_of_stock') {
+        const hasOutOfStock = product.variations?.some(v => v.isOutOfStock);
+        if (!hasOutOfStock) return false;
+      }
 
-  // Out of stock calculations with price / group details
-  const outOfStockItems = products.flatMap(p => 
-    p.variations.filter(v => v.isOutOfStock).map(v => formatOutOfStockItemText(p.name, v))
-  );
+      // Price Group filter
+      if (priceFilter !== 'all') {
+        if (priceFilter === '5') {
+          const matches5 = product.variations?.some(v => v.price === 5 || v.group === '5' || v.name?.includes('5') || v.name?.includes('٥'));
+          if (!matches5) return false;
+        } else if (priceFilter === '10') {
+          const matches10 = product.variations?.some(v => v.price === 10 || v.group === '10' || v.name?.includes('10') || v.name?.includes('١٠'));
+          if (!matches10) return false;
+        } else if (priceFilter === 'other') {
+          const matchesOther = product.variations?.some(v => 
+            v.group === 'other' || (v.price && v.price !== 5 && v.price !== 10) || (!v.price && !v.name?.includes('5') && !v.name?.includes('10'))
+          );
+          if (!matchesOther) return false;
+        }
+      }
 
-  const activePageOutOfStockItems = displayedProducts.flatMap(p =>
-    p.variations.filter(v => v.isOutOfStock).map(v => formatOutOfStockItemText(p.name, v))
-  );
+      return true;
+    });
+  }, [products, deferredSearchQuery, currentPage, stockStatusFilter, priceFilter]);
+
+  // Out of stock calculations with price / group details (Memoized)
+  const outOfStockItems = useMemo(() => {
+    return products.flatMap(p => 
+      (p.variations || []).filter(v => v.isOutOfStock).map(v => formatOutOfStockItemText(p.name, v))
+    );
+  }, [products]);
+
+  const activePageOutOfStockItems = useMemo(() => {
+    return displayedProducts.flatMap(p =>
+      (p.variations || []).filter(v => v.isOutOfStock).map(v => formatOutOfStockItemText(p.name, v))
+    );
+  }, [displayedProducts]);
 
   const handleCopy = () => {
     const textToCopy = outOfStockItems.map((item, i) => `${i + 1}. ${item}`).join('\n');
@@ -1064,7 +1090,7 @@ export default function App() {
                               <div className="relative">
                                 <input
                                   type="url"
-                                  placeholder="رابط صورة أو ارفع ملف أو ولدها بالـ AI..."
+                                  placeholder="رابط صورة للمنتج (اختياري) أو اختر صورة من جهازك..."
                                   value={newProductImage}
                                   onChange={(e) => setNewProductImage(e.target.value)}
                                   className="w-full pl-10 pr-3 py-2.5 sm:py-3 bg-gray-50 border border-gray-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none text-xs sm:text-sm min-w-0"
@@ -1087,18 +1113,6 @@ export default function App() {
                               </div>
                             )}
                           </div>
-                        </div>
-
-                        {/* AI Image Generation Option with Prompt */}
-                        <div className="pt-1">
-                          <AIImageGeneratorWidget
-                            productName={newProductName}
-                            category={newProductCategory}
-                            currentImage={newProductImage}
-                            onImageGenerated={(generatedImgUrl) => {
-                              setNewProductImage(generatedImgUrl);
-                            }}
-                          />
                         </div>
 
                         <button
